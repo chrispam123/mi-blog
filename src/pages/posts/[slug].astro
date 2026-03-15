@@ -1,0 +1,122 @@
+---
+import { getCollection, render } from 'astro:content'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts')
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }))
+}
+
+const { post } = Astro.props
+const { Content } = await render(post)
+
+const formattedDate = post.data.date.toLocaleDateString('es-ES', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+})
+---
+
+<BaseLayout title={post.data.title} description={post.data.description}>
+  <article class="post">
+    <header class="post-header">
+      <time class="post-date">{formattedDate}</time>
+      <h1 class="post-title">{post.data.title}</h1>
+      {
+        post.data.description && (
+          <p class="post-description">{post.data.description}</p>
+        )
+      }
+    </header>
+
+    <div class="post-content">
+      <Content />
+    </div>
+
+    <footer class="post-footer">
+      <a href="/" class="back-link">← Volver al inicio</a>
+    </footer>
+  </article>
+</BaseLayout>
+
+<style>
+  .post {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  .post-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .post-date {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .post-title {
+    font-family: var(--font-display);
+    font-size: 2.4rem;
+    font-weight: 300;
+    line-height: 1.15;
+    color: var(--color-text);
+  }
+
+  .post-description {
+    font-size: 0.9rem;
+    color: var(--color-muted);
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .post-content {
+    font-size: 1rem;
+    line-height: 1.85;
+  }
+
+  .post-content :global(p) {
+    margin-bottom: 1.5rem;
+  }
+
+  .post-content :global(h2) {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 300;
+    margin: 2.5rem 0 1rem;
+  }
+
+  .post-content :global(h3) {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 300;
+    margin: 2rem 0 0.75rem;
+  }
+
+  .post-footer {
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .back-link {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    text-decoration: none;
+  }
+
+  .back-link:hover {
+    color: var(--color-text);
+    transition: color 0.2s ease;
+  }
+</style>

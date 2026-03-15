@@ -1,31 +1,16 @@
 ---
 // index.astro
-// La página de inicio del blog.
-// Por ahora tiene posts hardcodeados como placeholder.
-// En el siguiente paso los leeremos desde archivos Markdown reales.
+// Ahora los posts se leen automáticamente desde src/content/posts/
+// getCollection() es la función de Astro que lee todos los archivos
+// Markdown de una colección y devuelve un array con sus datos.
+import { getCollection } from 'astro:content'
 import BaseLayout from '../layouts/BaseLayout.astro'
 
-const posts = [
-  {
-    slug: 'el-silencio-como-herramienta',
-    title: 'El silencio como herramienta',
-    date: '2024-03-15',
-    description: 'Una reflexión sobre escuchar antes de hablar.',
-  },
-  {
-    slug: 'sobre-comenzar',
-    title: 'Sobre comenzar',
-    date: '2024-02-28',
-    description: 'El primer paso siempre es el más difícil. O quizás no.',
-  },
-  {
-    slug: 'la-importancia-de-lo-inacabado',
-    title: 'La importancia de lo inacabado',
-    date: '2024-01-10',
-    description:
-      'Por qué dejar cosas sin terminar puede ser una decisión consciente.',
-  },
-]
+// Obtenemos todos los posts y los ordenamos por fecha descendente
+// para que el más reciente aparezca siempre primero.
+const posts = (await getCollection('posts')).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+)
 ---
 
 <BaseLayout title="Inicio">
@@ -33,11 +18,19 @@ const posts = [
     {
       posts.map((post) => (
         <li class="post-item">
-          <time class="post-date">{post.date}</time>
-          <a href={`/posts/${post.slug}`} class="post-title">
-            {post.title}
+          <time class="post-date">
+            {post.data.date.toLocaleDateString('es-ES', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </time>
+          <a href={`/posts/${post.id}`} class="post-title">
+            {post.data.title}
           </a>
-          <p class="post-description">{post.description}</p>
+          {post.data.description && (
+            <p class="post-description">{post.data.description}</p>
+          )}
         </li>
       ))
     }
