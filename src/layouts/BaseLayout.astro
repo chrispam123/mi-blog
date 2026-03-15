@@ -1,0 +1,159 @@
+---
+// BaseLayout.astro
+// Este es el componente raíz que envuelve TODAS las páginas del blog.
+// Recibe como props el título y la descripción de cada página
+// para que cada post pueda tener sus propios meta tags.
+interface Props {
+  title: string
+  description?: string
+}
+
+const { title, description = 'Autopoiesis — codigo y pensamientos' } =
+  Astro.props
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title} — Autopoiesis</title>
+
+    <!-- Google Fonts: Cormorant Garamond para títulos, Crimson Pro para cuerpo -->
+    <!-- Dos fuentes serif con personalidades distintas pero familia común -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <div class="site-wrapper">
+      <header class="site-header">
+        <a href="/" class="site-title">Autopoiesis</a>
+        <span class="site-tagline">notas y pensamientos</span>
+      </header>
+
+      <main class="site-main">
+        <!-- Aquí se inyecta el contenido de cada página -->
+        <slot />
+      </main>
+
+      <footer class="site-footer">
+        <span>Escrito a mano, desplegado con intención.</span>
+      </footer>
+    </div>
+  </body>
+</html>
+
+<style is:global>
+  /* ============================================================
+     VARIABLES: el sistema de diseño completo en un solo lugar.
+     Cambiar un valor aquí afecta a todo el blog.
+  ============================================================ */
+  :root {
+    --color-bg: #f7f3ed; /* crema cálido, como papel envejecido */
+    --color-text: #1a1612; /* casi negro, más cálido que #000 */
+    --color-muted: #8a7f74; /* para fechas, metadatos, footer */
+    --color-accent: #2c1810; /* marrón oscuro para el título del blog */
+    --color-border: #e0d8ce; /* líneas sutiles */
+
+    --font-display: 'Cormorant Garamond', Georgia, serif; /* títulos */
+    --font-body: 'Crimson Pro', Georgia, serif; /* cuerpo */
+
+    --max-width: 680px; /* ancho máximo del contenido */
+    --spacing-unit: 1rem;
+  }
+
+  /* Reset mínimo y base */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 20px; /* base generosa para lectura cómoda */
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-weight: 300;
+    line-height: 1.75;
+    /* Suavizado de fuentes para que las serif se vean bien en pantalla */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Contenedor principal centrado */
+  .site-wrapper {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 var(--spacing-unit);
+  }
+
+  /* Header: nombre del blog arriba, espacioso */
+  .site-header {
+    padding: 4rem 0 3rem;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .site-title {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    color: var(--color-accent);
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .site-title:hover {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+  }
+
+  .site-tagline {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* Footer: discreto, al fondo */
+  .site-footer {
+    margin-top: 6rem;
+    padding: 2rem 0 3rem;
+    border-top: 1px solid var(--color-border);
+    font-size: 0.7rem;
+    color: var(--color-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Tipografía general para el contenido de los posts */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 300;
+    line-height: 1.2;
+  }
+
+  a {
+    color: inherit;
+  }
+</style>

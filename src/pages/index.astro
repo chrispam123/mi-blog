@@ -1,17 +1,87 @@
 ---
+// index.astro
+// La página de inicio del blog.
+// Por ahora tiene posts hardcodeados como placeholder.
+// En el siguiente paso los leeremos desde archivos Markdown reales.
+import BaseLayout from '../layouts/BaseLayout.astro'
 
+const posts = [
+  {
+    slug: 'el-silencio-como-herramienta',
+    title: 'El silencio como herramienta',
+    date: '2024-03-15',
+    description: 'Una reflexión sobre escuchar antes de hablar.',
+  },
+  {
+    slug: 'sobre-comenzar',
+    title: 'Sobre comenzar',
+    date: '2024-02-28',
+    description: 'El primer paso siempre es el más difícil. O quizás no.',
+  },
+  {
+    slug: 'la-importancia-de-lo-inacabado',
+    title: 'La importancia de lo inacabado',
+    date: '2024-01-10',
+    description:
+      'Por qué dejar cosas sin terminar puede ser una decisión consciente.',
+  },
+]
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="generator" content={Astro.generator} />
-    <title>Astro</title>
-  </head>
-  <body>
-    <h1>Astro</h1>
-  </body>
-</html>
+<BaseLayout title="Inicio">
+  <ul class="post-list">
+    {
+      posts.map((post) => (
+        <li class="post-item">
+          <time class="post-date">{post.date}</time>
+          <a href={`/posts/${post.slug}`} class="post-title">
+            {post.title}
+          </a>
+          <p class="post-description">{post.description}</p>
+        </li>
+      ))
+    }
+  </ul>
+</BaseLayout>
+
+<style>
+  .post-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+  }
+
+  .post-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .post-date {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .post-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 300;
+    line-height: 1.2;
+    text-decoration: none;
+    color: var(--color-text);
+  }
+
+  .post-title:hover {
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+  }
+
+  .post-description {
+    font-size: 0.85rem;
+    color: var(--color-muted);
+    line-height: 1.6;
+  }
+</style>
