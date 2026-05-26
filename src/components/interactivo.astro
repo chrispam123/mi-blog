@@ -1337,28 +1337,30 @@
       s.flows.forEach((row) => {
         const fr = document.createElement('div')
         fr.className = 'flow-row'
-        for (let j = 0; j < row.length; j += 3) {
+
+        for (let j = 0; j < row.length; j += 4) {
+          // 1. Renderizar Nodo Origen
           if (row[j] && row[j + 1]) {
             const n = document.createElement('span')
             n.className = 'fnode ' + row[j]
             n.textContent = row[j + 1]
             fr.appendChild(n)
           }
+
+          // 2. Renderizar Flecha con su texto intermedio descriptivo
           if (row[j + 2]) {
             const arr = document.createElement('span')
             arr.className = 'farr'
             arr.innerHTML =
               '<i class="ti ti-arrow-right" aria-hidden="true"></i>'
-            if (row[j + 2] === 'fn-gray' && row[j + 3]) {
+            fr.appendChild(arr)
+
+            if (row[j + 3]) {
               const lbl = document.createElement('span')
               lbl.style.cssText =
-                'font-size:11px;color:var(--color-text-tertiary)'
+                'font-size: 11px; color: var(--color-text-tertiary); white-space: nowrap;'
               lbl.textContent = row[j + 3]
-              fr.appendChild(arr)
               fr.appendChild(lbl)
-              j++
-            } else {
-              fr.appendChild(arr)
             }
           }
         }
