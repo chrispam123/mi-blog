@@ -10,6 +10,8 @@ const posts = defineCollection({
     date: z.coerce.date(),
     description: z.string().optional(),
     showArchitectureDiagram: z.boolean().optional(), // ◄ Añadimos esta línea
+    // ◄ AÑADE ESTA LÍNEA PARA QUE EL SLUG RECONOZCA LA BANDERA
+    showInteractiveComponent: z.boolean().optional(),
   }),
 })
 

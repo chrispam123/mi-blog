@@ -1,7 +1,10 @@
 ---
 import { getCollection, render } from 'astro:content'
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import DiagramaNocturne from '../../components/DiagramaNocturne.astro' // ◄ 1. Importamos el componente
+import DiagramaNocturne from '../../components/DiagramaNocturne.astro'
+
+// ◄ NUEVO: Importamos el nuevo componente con un nombre único y cerramos la comilla correctamente
+import ComponenteInteractivo from '../../components/interactivo.astro'
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts')
@@ -14,8 +17,8 @@ export async function getStaticPaths() {
 const { post } = Astro.props
 const { Content } = await render(post)
 
-// 2. Extraemos la bandera condicional desde post.data
-const { showArchitectureDiagram } = post.data
+// ◄ MODIFICADO: Extraemos AMBAS banderas condicionales desde el frontmatter (post.data)
+const { showArchitectureDiagram, showInteractiveComponent } = post.data
 
 const formattedDate = post.data.date.toLocaleDateString('es-ES', {
   year: 'numeric',
@@ -36,10 +39,13 @@ const formattedDate = post.data.date.toLocaleDateString('es-ES', {
       }
     </header>
 
-    {
-      /* ◄ 3. Si el post lo solicita en su Frontmatter, inyectamos el diagrama de forma nativa */
-    }
+    {/* Si el post solicita el diagrama de arquitectura, lo inyecta */}
     {showArchitectureDiagram && <DiagramaNocturne />}
+
+    {
+      /* ◄ NUEVO: Si el post solicita el nuevo componente interactivo en su Frontmatter, lo inyecta aquí */
+    }
+    {showInteractiveComponent && <ComponenteInteractivo />}
 
     <div class="post-content">
       <Content />
@@ -52,12 +58,12 @@ const formattedDate = post.data.date.toLocaleDateString('es-ES', {
 </BaseLayout>
 
 <style>
+  /* Tus estilos se mantienen exactamente iguales abajo... */
   .post {
     display: flex;
     flex-direction: column;
     gap: 3rem;
   }
-
   .post-header {
     display: flex;
     flex-direction: column;
@@ -65,14 +71,12 @@ const formattedDate = post.data.date.toLocaleDateString('es-ES', {
     padding-bottom: 2.5rem;
     border-bottom: 1px solid var(--color-border);
   }
-
   .post-date {
     font-size: 0.65rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--color-muted);
   }
-
   .post-title {
     font-family: var(--font-display);
     font-size: 2.4rem;
@@ -80,42 +84,35 @@ const formattedDate = post.data.date.toLocaleDateString('es-ES', {
     line-height: 1.15;
     color: var(--color-text);
   }
-
   .post-description {
     font-size: 0.9rem;
     color: var(--color-muted);
     line-height: 1.6;
     font-style: italic;
   }
-
   .post-content {
     font-size: 1rem;
     line-height: 1.85;
   }
-
   .post-content :global(p) {
     margin-bottom: 1.5rem;
   }
-
   .post-content :global(h2) {
     font-family: var(--font-display);
     font-size: 1.5rem;
     font-weight: 300;
     margin: 2.5rem 0 1rem;
   }
-
   .post-content :global(h3) {
     font-family: var(--font-display);
     font-size: 1.2rem;
     font-weight: 300;
     margin: 2rem 0 0.75rem;
   }
-
   .post-footer {
     padding-top: 2rem;
     border-top: 1px solid var(--color-border);
   }
-
   .back-link {
     font-size: 0.7rem;
     letter-spacing: 0.1em;
@@ -123,7 +120,6 @@ const formattedDate = post.data.date.toLocaleDateString('es-ES', {
     color: var(--color-muted);
     text-decoration: none;
   }
-
   .back-link:hover {
     color: var(--color-text);
     transition: color 0.2s ease;

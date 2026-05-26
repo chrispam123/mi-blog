@@ -1,0 +1,1438 @@
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  .w {
+    font-family: var(--font-sans);
+    padding: 20px 16px 28px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  .phase-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .ptab {
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--color-border-secondary);
+    background: var(--color-background-secondary);
+    color: var(--color-text-secondary);
+    transition: all 0.2s;
+  }
+  .ptab.active {
+    border-color: transparent;
+    color: #fff;
+  }
+  .ptab.p0.active {
+    background: #534ab7;
+  }
+  .ptab.p1.active {
+    background: #0f6e56;
+  }
+  .ptab.p2.active {
+    background: #993c1d;
+  }
+
+  .phase-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+  }
+  .phase-sub {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-bottom: 18px;
+  }
+
+  .steps-wrap {
+    position: relative;
+  }
+  .step-connector {
+    position: absolute;
+    left: 21px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--color-border-tertiary);
+    z-index: 0;
+  }
+
+  .step {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 4px;
+    position: relative;
+    z-index: 1;
+  }
+  .step-dot-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .step-dot {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--color-border-secondary);
+    background: var(--color-background-primary);
+    color: var(--color-text-secondary);
+    transition: all 0.3s;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .step-dot.active-dot {
+    border-color: transparent;
+    color: #fff;
+  }
+  .p0 .step-dot.active-dot {
+    background: #534ab7;
+  }
+  .p1 .step-dot.active-dot {
+    background: #0f6e56;
+  }
+  .p2 .step-dot.active-dot {
+    background: #993c1d;
+  }
+  .step-dot.done-dot {
+    border-color: transparent;
+    color: #fff;
+    background: #639922;
+  }
+
+  .step-line {
+    width: 1px;
+    flex: 1;
+    min-height: 4px;
+    background: var(--color-border-tertiary);
+  }
+
+  .step-card {
+    flex: 1;
+    border: 1px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    background: var(--color-background-primary);
+    margin-bottom: 8px;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .step-card.active-card {
+    border-color: #afa9ec;
+  }
+  .p1 .step-card.active-card {
+    border-color: #5dcaa5;
+  }
+  .p2 .step-card.active-card {
+    border-color: #f0997b;
+  }
+
+  .step-header {
+    padding: 12px 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .step-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .step-num-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+  .p0-badge {
+    background: #eeedfe;
+    color: #3c3489;
+  }
+  .p1-badge {
+    background: #e1f5ee;
+    color: #085041;
+  }
+  .p2-badge {
+    background: #faece7;
+    color: #4a1b0c;
+  }
+  @media (prefers-color-scheme: dark) {
+    .p0-badge {
+      background: #26215c;
+      color: #cecbf6;
+    }
+    .p1-badge {
+      background: #04342c;
+      color: #9fe1cb;
+    }
+    .p2-badge {
+      background: #4a1b0c;
+      color: #f5c4b3;
+    }
+  }
+  .step-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  .step-chevron {
+    font-size: 16px;
+    color: var(--color-text-tertiary);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .step-chevron.open {
+    transform: rotate(180deg);
+  }
+
+  .step-body {
+    padding: 0 14px;
+    max-height: 0;
+    overflow: hidden;
+    transition:
+      max-height 0.35s ease,
+      padding 0.2s;
+  }
+  .step-body.open {
+    padding: 0 14px 14px;
+    max-height: 600px;
+  }
+
+  .actors-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .actor {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border-tertiary);
+    background: var(--color-background-secondary);
+    color: var(--color-text-secondary);
+  }
+  .actor i {
+    font-size: 13px;
+  }
+
+  .step-desc {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+
+  .flow-diagram {
+    border: 1px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    background: var(--color-background-secondary);
+    padding: 10px 12px;
+  }
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .flow-row:last-child {
+    margin-bottom: 0;
+  }
+  .fnode {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .fn-purple {
+    background: #eeedfe;
+    color: #3c3489;
+    border: 1px solid #afa9ec;
+  }
+  .fn-teal {
+    background: #e1f5ee;
+    color: #085041;
+    border: 1px solid #5dcaa5;
+  }
+  .fn-green {
+    background: #eaf3de;
+    color: #173404;
+    border: 1px solid #97c459;
+  }
+  .fn-amber {
+    background: #faeeda;
+    color: #633806;
+    border: 1px solid #ef9f27;
+  }
+  .fn-blue {
+    background: #e6f1fb;
+    color: #0c447c;
+    border: 1px solid #85b7eb;
+  }
+  .fn-coral {
+    background: #faece7;
+    color: #4a1b0c;
+    border: 1px solid #f0997b;
+  }
+  .fn-pink {
+    background: #fbeaf0;
+    color: #4b1528;
+    border: 1px solid #ed93b1;
+  }
+  .fn-gray {
+    background: #f1efe8;
+    color: #2c2c2a;
+    border: 1px solid #b4b2a9;
+  }
+  .fn-red {
+    background: #fcebeb;
+    color: #501313;
+    border: 1px solid #f09595;
+  }
+  @media (prefers-color-scheme: dark) {
+    .fn-purple {
+      background: #26215c;
+      color: #cecbf6;
+      border-color: #534ab7;
+    }
+    .fn-teal {
+      background: #04342c;
+      color: #9fe1cb;
+      border-color: #0f6e56;
+    }
+    .fn-green {
+      background: #173404;
+      color: #c0dd97;
+      border-color: #3b6d11;
+    }
+    .fn-amber {
+      background: #412402;
+      color: #fac775;
+      border-color: #854f0b;
+    }
+    .fn-blue {
+      background: #042c53;
+      color: #b5d4f4;
+      border-color: #185fa5;
+    }
+    .fn-coral {
+      background: #4a1b0c;
+      color: #f5c4b3;
+      border-color: #993c1d;
+    }
+    .fn-pink {
+      background: #4b1528;
+      color: #f4c0d1;
+      border-color: #993556;
+    }
+    .fn-gray {
+      background: #2c2c2a;
+      color: #d3d1c7;
+      border-color: #5f5e5a;
+    }
+    .fn-red {
+      background: #501313;
+      color: #f7c1c1;
+      border-color: #a32d2d;
+    }
+  }
+  .farr {
+    color: var(--color-text-tertiary);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .state-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: 8px;
+  }
+  .st-pending {
+    background: #faeeda;
+    color: #633806;
+  }
+  .st-running {
+    background: #e6f1fb;
+    color: #0c447c;
+  }
+  .st-done {
+    background: #eaf3de;
+    color: #173404;
+  }
+  .st-paused {
+    background: #fcebeb;
+    color: #501313;
+  }
+  @media (prefers-color-scheme: dark) {
+    .st-pending {
+      background: #412402;
+      color: #fac775;
+    }
+    .st-running {
+      background: #042c53;
+      color: #b5d4f4;
+    }
+    .st-done {
+      background: #173404;
+      color: #c0dd97;
+    }
+    .st-paused {
+      background: #501313;
+      color: #f7c1c1;
+    }
+  }
+
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+  }
+  .nav-btn {
+    padding: 7px 16px;
+    border-radius: var(--border-radius-md);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--color-border-secondary);
+    background: var(--color-background-secondary);
+    color: var(--color-text-primary);
+    transition: all 0.2s;
+  }
+  .nav-btn:hover {
+    background: var(--color-background-primary);
+  }
+  .nav-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .nav-btn.primary {
+    background: #534ab7;
+    color: #fff;
+    border-color: #534ab7;
+  }
+  .nav-btn.primary:hover {
+    background: #3c3489;
+  }
+  .p1 .nav-btn.primary {
+    background: #0f6e56;
+    border-color: #0f6e56;
+  }
+  .p1 .nav-btn.primary:hover {
+    background: #085041;
+  }
+  .p2 .nav-btn.primary {
+    background: #993c1d;
+    border-color: #993c1d;
+  }
+  .p2 .nav-btn.primary:hover {
+    background: #712b13;
+  }
+  .step-counter {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+
+  .progress-bar-wrap {
+    margin-bottom: 16px;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    margin-bottom: 5px;
+  }
+  .progress-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-border-tertiary);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .p-fill-0 {
+    background: #534ab7;
+  }
+  .p-fill-1 {
+    background: #0f6e56;
+  }
+  .p-fill-2 {
+    background: #993c1d;
+  }
+</style>
+
+<div class="w" id="main">
+  <h2 class="sr-only">
+    Flujo interactivo completo del usuario en Nocturne: autenticación,
+    exportación e importación
+  </h2>
+
+  <div class="phase-tabs" id="phaseTabs"></div>
+  <div class="progress-bar-wrap">
+    <div class="progress-label">
+      <span id="progressLabel"></span><span id="progressFrac"></span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+  <div class="phase-title" id="phaseTitle"></div>
+  <div class="phase-sub" id="phaseSub"></div>
+  <div class="steps-wrap" id="stepsWrap">
+    <div class="step-connector"></div>
+  </div>
+  <div class="nav-row">
+    <button class="nav-btn" id="btnPrev" onclick="navigate(-1)"
+      ><i class="ti ti-arrow-left" aria-hidden="true"></i> Anterior</button
+    >
+    <span class="step-counter" id="stepCounter"></span>
+    <button class="nav-btn primary" id="btnNext" onclick="navigate(1)"
+      >Siguiente <i class="ti ti-arrow-right" aria-hidden="true"></i></button
+    >
+  </div>
+</div>
+
+<script is:inline>
+  const phases = [
+    {
+      id: 'p0',
+      label: 'Acto I · Autenticación',
+      title: 'El usuario abre la extensión por primera vez',
+      sub: 'Flujo OIDC con Google · cifrado KMS · creación de identidad',
+      steps: [
+        {
+          title: 'Usuario abre la extensión Chrome',
+          desc: 'El usuario instala y abre la Chrome Extension de Nocturne por primera vez. La extensión detecta que no hay sesión activa y muestra la pantalla de login con el botón "Conectar con Google".',
+          actors: ['ti-user · Usuario', 'ti-puzzle · Chrome Extension'],
+          flows: [
+            [
+              'fn-purple',
+              'Chrome Extension',
+              null,
+              'fn-gray',
+              'Sin sesión detectada',
+              null,
+              'fn-purple',
+              'Muestra pantalla login',
+            ],
+          ],
+          state: null,
+        },
+        {
+          title: 'Solicitud OIDC a Google',
+          desc: 'La extensión inicia el flujo OAuth 2.0 / OIDC. Abre un popup de Google con los scopes necesarios: YouTube ReadOnly, email, openid. El usuario acepta los permisos.',
+          actors: [
+            'ti-puzzle · Chrome Extension',
+            'ti-brand-google · Google OAuth',
+          ],
+          flows: [
+            [
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              'POST /auth/login',
+              null,
+              'fn-teal',
+              'API Gateway',
+            ],
+            [
+              'fn-teal',
+              'API Gateway',
+              null,
+              'fn-gray',
+              'redirect',
+              null,
+              'fn-gray',
+              'Google OAuth popup',
+            ],
+          ],
+          state: null,
+        },
+        {
+          title: 'Dispatcher intercambia el código por tokens',
+          desc: 'Google devuelve un authorization_code. El API Dispatcher lo intercambia por un Access Token + Refresh Token usando el client_secret almacenado en SSM Parameter Store.',
+          actors: [
+            'ti-shield · API Dispatcher',
+            'ti-key · SSM / KMS',
+            'ti-database · DynamoDB',
+          ],
+          flows: [
+            [
+              'fn-gray',
+              'Google code',
+              null,
+              'fn-teal',
+              'API Dispatcher',
+              null,
+              'fn-gray',
+              'POST token exchange',
+            ],
+            [
+              'fn-teal',
+              'Dispatcher',
+              null,
+              'fn-amber',
+              'SSM',
+              null,
+              'fn-gray',
+              'obtiene client_secret',
+            ],
+            [
+              'fn-teal',
+              'Dispatcher',
+              null,
+              'fn-amber',
+              'KMS',
+              null,
+              'fn-gray',
+              'cifra refresh_token',
+            ],
+          ],
+          state: 'pending',
+        },
+        {
+          title: 'Identidad creada en DynamoDB',
+          desc: 'El Dispatcher guarda el perfil del usuario en DynamoDB: userId (sub de Google), email, refresh_token cifrado con KMS, y quotaLedger inicial. La extensión recibe un JWT de sesión propio de Nocturne.',
+          actors: [
+            'ti-shield · API Dispatcher',
+            'ti-database · DynamoDB',
+            'ti-puzzle · Chrome Extension',
+          ],
+          flows: [
+            [
+              'fn-teal',
+              'Dispatcher',
+              null,
+              'fn-green',
+              'DynamoDB',
+              null,
+              'fn-gray',
+              'PUT usuarios/{userId}',
+            ],
+            [
+              'fn-green',
+              'DynamoDB',
+              null,
+              'fn-gray',
+              '{ userId, email, tokenCifrado }',
+              null,
+              null,
+              null,
+            ],
+            [
+              'fn-teal',
+              'Dispatcher',
+              null,
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              'JWT sesión Nocturne',
+            ],
+          ],
+          state: 'done',
+        },
+      ],
+    },
+    {
+      id: 'p1',
+      label: 'Acto II · Exportación',
+      title: 'Exportar 100 suscripciones de YouTube',
+      sub: 'SQS Job Queue · Worker idempotente · polling de progreso',
+      steps: [
+        {
+          title: 'Usuario inicia el ritual de exportación',
+          desc: 'En la ActionPhase de la extensión, el usuario pulsa "Exportar suscripciones". La extensión llama al API Dispatcher con el JWT de sesión y tipo de ritual: EXPORT_SUBSCRIPTIONS.',
+          actors: [
+            'ti-user · Usuario',
+            'ti-puzzle · Chrome Extension',
+            'ti-shield · API Dispatcher',
+          ],
+          flows: [
+            [
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              'POST /job/start',
+              null,
+              'fn-teal',
+              'API Gateway',
+            ],
+            [
+              'fn-teal',
+              'API Gateway',
+              null,
+              'fn-teal',
+              'API Dispatcher',
+              null,
+              'fn-gray',
+              '{ type: EXPORT_SUBS }',
+            ],
+          ],
+          state: 'pending',
+        },
+        {
+          title: 'Dispatcher crea el Job y lo encola',
+          desc: 'El Dispatcher crea un registro en DynamoDB con estado PENDING (doneCount=0, totalCount=100). Luego publica el mensaje en la SQS Job Queue. El jobId es devuelto a la extensión.',
+          actors: [
+            'ti-shield · API Dispatcher',
+            'ti-database · DynamoDB',
+            'ti-message · SQS Job Queue',
+          ],
+          flows: [
+            [
+              'fn-teal',
+              'Dispatcher',
+              null,
+              'fn-green',
+              'DynamoDB',
+              null,
+              'fn-gray',
+              'Job { id, PENDING, total:100 }',
+            ],
+            [
+              'fn-teal',
+              'Dispatcher',
+              null,
+              'fn-blue',
+              'SQS Queue',
+              null,
+              'fn-gray',
+              '{ jobId, userId, type }',
+            ],
+            [
+              'fn-teal',
+              'Dispatcher',
+              null,
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              '{ jobId } → empieza polling',
+            ],
+          ],
+          state: 'pending',
+        },
+        {
+          title: 'Worker procesa las 100 suscripciones',
+          desc: 'El Worker Processor consume el mensaje de SQS. Descifra el refresh_token con KMS, obtiene un Access Token de Google, y llama a YouTube Data API v3 en páginas de 50. Actualiza doneCount atómicamente en DynamoDB tras cada página.',
+          actors: [
+            'ti-settings · Worker',
+            'ti-key · KMS',
+            'ti-brand-youtube · YouTube API',
+            'ti-database · DynamoDB',
+          ],
+          flows: [
+            [
+              'fn-coral',
+              'Worker',
+              null,
+              'fn-amber',
+              'KMS',
+              null,
+              'fn-gray',
+              'decrypt refresh_token',
+            ],
+            [
+              'fn-coral',
+              'Worker',
+              null,
+              'fn-gray',
+              'YouTube API',
+              null,
+              'fn-gray',
+              'GET subs page 1 (50)',
+            ],
+            [
+              'fn-coral',
+              'Worker',
+              null,
+              'fn-green',
+              'DynamoDB',
+              null,
+              'fn-gray',
+              'doneCount += 50',
+            ],
+            [
+              'fn-coral',
+              'Worker',
+              null,
+              'fn-gray',
+              'YouTube API',
+              null,
+              'fn-gray',
+              'GET subs page 2 (50)',
+            ],
+            [
+              'fn-coral',
+              'Worker',
+              null,
+              'fn-green',
+              'DynamoDB',
+              null,
+              'fn-gray',
+              'doneCount = 100',
+            ],
+          ],
+          state: 'running',
+        },
+        {
+          title: 'Extensión hace polling del progreso',
+          desc: 'Mientras el Worker procesa, la extensión llama cada 3s a GET /status/{jobId} → API Gateway → Lambda Status. Lambda Status lee los contadores atómicos de DynamoDB y devuelve el porcentaje. La barra de progreso se actualiza en tiempo real.',
+          actors: [
+            'ti-puzzle · Chrome Extension',
+            'ti-antenna · Lambda Status',
+            'ti-database · DynamoDB',
+          ],
+          flows: [
+            [
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              'GET /status/jobId',
+              null,
+              'fn-teal',
+              'API Gateway',
+            ],
+            [
+              'fn-teal',
+              'API Gateway',
+              null,
+              'fn-pink',
+              'Lambda Status',
+              null,
+              'fn-green',
+              'DynamoDB',
+            ],
+            [
+              'fn-green',
+              'DynamoDB',
+              null,
+              'fn-gray',
+              '{ done:50, total:100 }',
+              null,
+              'fn-pink',
+              'Lambda Status',
+            ],
+            [
+              'fn-pink',
+              'Lambda Status',
+              null,
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              '{ progress: 50% }',
+            ],
+          ],
+          state: 'running',
+        },
+        {
+          title: 'Job completado · JSON guardado en S3',
+          desc: 'El Worker termina, escribe el JSON con las 100 suscripciones en S3 Bunker con la clave exports/{userId}/{jobId}.json. Actualiza el Job a estado DONE en DynamoDB. La extensión detecta el 100% y muestra el botón de descarga.',
+          actors: [
+            'ti-settings · Worker',
+            'ti-database · S3 Bunker',
+            'ti-database · DynamoDB',
+            'ti-puzzle · Extension',
+          ],
+          flows: [
+            [
+              'fn-coral',
+              'Worker',
+              null,
+              'fn-green',
+              'S3 Bunker',
+              null,
+              'fn-gray',
+              'PUT exports/userId/jobId.json',
+            ],
+            [
+              'fn-coral',
+              'Worker',
+              null,
+              'fn-green',
+              'DynamoDB',
+              null,
+              'fn-gray',
+              'Job → DONE, done:100',
+            ],
+            [
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              'polling detecta 100%',
+              null,
+              'fn-gray',
+              'muestra ✓ Completado',
+            ],
+          ],
+          state: 'done',
+        },
+      ],
+    },
+    {
+      id: 'p2',
+      label: 'Acto III · Importación',
+      title: 'Importar JSON con 50 suscripciones + 10 playlists',
+      sub: 'Presigned URL · S3 direct upload · Worker idempotente',
+      steps: [
+        {
+          title: 'Usuario selecciona el archivo .json',
+          desc: 'El usuario va a la opción Importar en la extensión y selecciona su archivo local (subs_playlists.json, ~120KB) que contiene 50 suscripciones y 10 playlists. La extensión lee el archivo en memoria y lo valida localmente.',
+          actors: ['ti-user · Usuario', 'ti-puzzle · Chrome Extension'],
+          flows: [
+            [
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              '<input type=file>',
+              null,
+              'fn-gray',
+              'subs_playlists.json',
+            ],
+            [
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              'valida JSON localmente',
+              null,
+              'fn-gray',
+              '{ subs:50, playlists:10 }',
+            ],
+          ],
+          state: null,
+        },
+        {
+          title: 'Solicita Presigned URL a Lambda Upload-URL',
+          desc: 'La extensión llama a POST /upload-url pasando el contentType y tamaño. Lambda Upload-URL genera una Presigned URL de S3 con TTL de 5 minutos y devuelve también el s3Key generado para este archivo.',
+          actors: [
+            'ti-puzzle · Extension',
+            'ti-upload · Lambda Upload-URL',
+            'ti-database · S3 Bunker',
+          ],
+          flows: [
+            [
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              'POST /upload-url',
+              null,
+              'fn-teal',
+              'API Gateway',
+            ],
+            [
+              'fn-teal',
+              'API Gateway',
+              null,
+              'fn-coral',
+              'Lambda Upload-URL',
+              null,
+              'fn-gray',
+              'genera s3Key',
+            ],
+            [
+              'fn-coral',
+              'Lambda Upload-URL',
+              null,
+              'fn-green',
+              'S3 Bunker',
+              null,
+              'fn-gray',
+              'crea presigned PUT URL',
+            ],
+            [
+              'fn-coral',
+              'Lambda Upload-URL',
+              null,
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              '{ url, s3Key, ttl:5min }',
+            ],
+          ],
+          state: null,
+        },
+        {
+          title: 'Subida directa a S3 (sin pasar por Lambdas)',
+          desc: 'La extensión realiza un PUT directo al bucket S3 usando la Presigned URL. El archivo viaja directamente desde el navegador al S3 Bunker sin consumir memoria ni tiempo de ninguna Lambda. Ahorra costes y latencia.',
+          actors: ['ti-puzzle · Chrome Extension', 'ti-database · S3 Bunker'],
+          flows: [
+            [
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              'PUT presigned-url',
+              null,
+              'fn-green',
+              'S3 Bunker',
+            ],
+            [
+              'fn-green',
+              'S3 Bunker',
+              null,
+              'fn-gray',
+              '200 OK',
+              null,
+              'fn-purple',
+              'Extension',
+            ],
+            [
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              'archivo guardado en s3Key',
+              null,
+              null,
+              null,
+            ],
+          ],
+          state: null,
+        },
+        {
+          title: 'Dispatcher crea Job de importación',
+          desc: 'La extensión llama al API Dispatcher con { type: IMPORT, s3Key, counts: { subs:50, playlists:10 } }. El Dispatcher crea el Job en DynamoDB con totalCount=60 (50+10) y estado PENDING, y publica en SQS.',
+          actors: [
+            'ti-shield · API Dispatcher',
+            'ti-database · DynamoDB',
+            'ti-message · SQS Queue',
+          ],
+          flows: [
+            [
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-teal',
+              'Dispatcher',
+              null,
+              'fn-gray',
+              'POST /job/start { s3Key }',
+            ],
+            [
+              'fn-teal',
+              'Dispatcher',
+              null,
+              'fn-green',
+              'DynamoDB',
+              null,
+              'fn-gray',
+              'Job PENDING total:60',
+            ],
+            [
+              'fn-teal',
+              'Dispatcher',
+              null,
+              'fn-blue',
+              'SQS Queue',
+              null,
+              'fn-gray',
+              '{ jobId, s3Key, IMPORT }',
+            ],
+            [
+              'fn-teal',
+              'Dispatcher',
+              null,
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              '{ jobId }',
+            ],
+          ],
+          state: 'pending',
+        },
+        {
+          title: 'Worker descarga el JSON y procesa item a item',
+          desc: 'El Worker consume el mensaje de SQS, descarga el JSON de S3 usando el s3Key, y procesa: primero suscribe al canal (subscriptions.insert) para cada una de las 50 suscripciones, luego crea las 10 playlists (playlists.insert). Idempotente: verifica si el ítem ya existe antes de operar.',
+          actors: [
+            'ti-settings · Worker',
+            'ti-database · S3 Bunker',
+            'ti-brand-youtube · YouTube API',
+            'ti-database · DynamoDB',
+          ],
+          flows: [
+            [
+              'fn-coral',
+              'Worker',
+              null,
+              'fn-green',
+              'S3 Bunker',
+              null,
+              'fn-gray',
+              'GET s3Key → JSON',
+            ],
+            [
+              'fn-coral',
+              'Worker',
+              null,
+              'fn-gray',
+              'YouTube API',
+              null,
+              'fn-gray',
+              'subscriptions.insert ×50',
+            ],
+            [
+              'fn-coral',
+              'Worker',
+              null,
+              'fn-gray',
+              'YouTube API',
+              null,
+              'fn-gray',
+              'playlists.insert ×10',
+            ],
+            [
+              'fn-coral',
+              'Worker',
+              null,
+              'fn-green',
+              'DynamoDB',
+              null,
+              'fn-gray',
+              'doneCount++ (idempotente)',
+            ],
+          ],
+          state: 'running',
+        },
+        {
+          title: 'Extensión monitorea progreso en tiempo real',
+          desc: 'Igual que en la exportación, la extensión hace polling a Lambda Status. El progreso muestra los 60 ítems procesados (50 subs + 10 playlists). Si el Worker se queda sin tiempo de Lambda, se auto-reencola y el progreso continúa sin pérdida.',
+          actors: [
+            'ti-puzzle · Extension',
+            'ti-antenna · Lambda Status',
+            'ti-database · DynamoDB',
+          ],
+          flows: [
+            [
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-pink',
+              'Lambda Status',
+              null,
+              'fn-green',
+              'DynamoDB',
+            ],
+            [
+              'fn-green',
+              'DynamoDB',
+              null,
+              'fn-gray',
+              'done:35/60',
+              null,
+              'fn-purple',
+              'Extension',
+            ],
+            [
+              'fn-coral',
+              'Worker timeout?',
+              null,
+              'fn-blue',
+              'SQS auto-relay',
+              null,
+              'fn-gray',
+              '↻ continúa sin pérdida',
+            ],
+          ],
+          state: 'running',
+        },
+        {
+          title: 'Importación completada · Job DONE',
+          desc: 'El Worker finaliza los 60 ítems. Actualiza el Job a DONE en DynamoDB. La extensión detecta el 100% en el polling y muestra el resumen final: "50 suscripciones y 10 playlists importadas correctamente".',
+          actors: [
+            'ti-settings · Worker',
+            'ti-database · DynamoDB',
+            'ti-puzzle · Extension',
+            'ti-user · Usuario',
+          ],
+          flows: [
+            [
+              'fn-coral',
+              'Worker',
+              null,
+              'fn-green',
+              'DynamoDB',
+              null,
+              'fn-gray',
+              'Job → DONE done:60/60',
+            ],
+            [
+              'fn-purple',
+              'Extension',
+              null,
+              'fn-gray',
+              'polling detecta 100%',
+              null,
+              'fn-gray',
+              'muestra resumen',
+            ],
+            [
+              'fn-gray',
+              'Resultado',
+              null,
+              'fn-green',
+              '50 subs importadas',
+              null,
+              'fn-green',
+              '10 playlists creadas',
+            ],
+          ],
+          state: 'done',
+        },
+      ],
+    },
+  ]
+
+  let currentPhase = 0
+  let currentStep = 0
+  let openStep = 0
+
+  function renderPhase() {
+    const ph = phases[currentPhase]
+    const tabs = document.getElementById('phaseTabs')
+    tabs.innerHTML = ''
+    phases.forEach((p, i) => {
+      const b = document.createElement('button')
+      b.className = 'ptab p' + i + (i === currentPhase ? ' active' : '')
+      b.textContent = p.label
+      b.onclick = () => {
+        currentPhase = i
+        currentStep = 0
+        openStep = 0
+        renderPhase()
+      }
+      tabs.appendChild(b)
+    })
+
+    document.getElementById('phaseTitle').textContent = ph.title
+    document.getElementById('phaseSub').textContent = ph.sub
+
+    const fill = Math.round(((currentStep + 1) / ph.steps.length) * 100)
+    document.getElementById('progressLabel').textContent = ph.label
+    document.getElementById('progressFrac').textContent =
+      currentStep + 1 + '/' + ph.steps.length
+    const pf = document.getElementById('progressFill')
+    pf.style.width = fill + '%'
+    pf.className = 'progress-fill p-fill-' + currentPhase
+
+    document.getElementById('stepCounter').textContent =
+      'Paso ' + (currentStep + 1) + ' de ' + ph.steps.length
+
+    const wrap = document.getElementById('stepsWrap')
+    const conn = wrap.querySelector('.step-connector')
+    wrap.innerHTML = ''
+    wrap.appendChild(conn)
+
+    const main = document.getElementById('main')
+    main.className = 'w p' + currentPhase
+
+    ph.steps.forEach((s, i) => {
+      const isDone = i < currentStep
+      const isActive = i === currentStep
+      const isOpen = i === openStep
+
+      const step = document.createElement('div')
+      step.className = 'step'
+
+      const dotWrap = document.createElement('div')
+      dotWrap.className = 'step-dot-wrap'
+      const dot = document.createElement('div')
+      dot.className =
+        'step-dot' + (isDone ? ' done-dot' : isActive ? ' active-dot' : '')
+      if (isDone)
+        dot.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i>'
+      else dot.textContent = i + 1
+      dotWrap.appendChild(dot)
+      if (i < ph.steps.length - 1) {
+        const ln = document.createElement('div')
+        ln.className = 'step-line'
+        dotWrap.appendChild(ln)
+      }
+      step.appendChild(dotWrap)
+
+      const card = document.createElement('div')
+      card.className = 'step-card' + (isActive ? ' active-card' : '')
+
+      const hdr = document.createElement('div')
+      hdr.className = 'step-header'
+      const left = document.createElement('div')
+      left.className = 'step-header-left'
+      const badge = document.createElement('span')
+      badge.className = 'step-num-badge p' + currentPhase + '-badge'
+      badge.textContent = 'paso ' + (i + 1)
+      const title = document.createElement('span')
+      title.className = 'step-title'
+      title.textContent = s.title
+      left.appendChild(badge)
+      left.appendChild(title)
+      const chev = document.createElement('span')
+      chev.className = 'step-chevron' + (isOpen ? ' open' : '')
+      chev.innerHTML = '<i class="ti ti-chevron-down" aria-hidden="true"></i>'
+      hdr.appendChild(left)
+      hdr.appendChild(chev)
+      hdr.onclick = () => {
+        openStep = openStep === i ? -1 : i
+        renderPhase()
+      }
+
+      const body = document.createElement('div')
+      body.className = 'step-body' + (isOpen ? ' open' : '')
+
+      const actors = document.createElement('div')
+      actors.className = 'actors-row'
+      s.actors.forEach((a) => {
+        const [ico, lbl] = a.split(' · ')
+        const el = document.createElement('span')
+        el.className = 'actor'
+        el.innerHTML = `<i class="ti ${ico}" aria-hidden="true"></i>${lbl}`
+        actors.appendChild(el)
+      })
+
+      const desc = document.createElement('div')
+      desc.className = 'step-desc'
+      desc.textContent = s.desc
+
+      const diagram = document.createElement('div')
+      diagram.className = 'flow-diagram'
+      s.flows.forEach((row) => {
+        const fr = document.createElement('div')
+        fr.className = 'flow-row'
+        for (let j = 0; j < row.length; j += 3) {
+          if (row[j] && row[j + 1]) {
+            const n = document.createElement('span')
+            n.className = 'fnode ' + row[j]
+            n.textContent = row[j + 1]
+            fr.appendChild(n)
+          }
+          if (row[j + 2]) {
+            const arr = document.createElement('span')
+            arr.className = 'farr'
+            arr.innerHTML =
+              '<i class="ti ti-arrow-right" aria-hidden="true"></i>'
+            if (row[j + 2] === 'fn-gray' && row[j + 3]) {
+              const lbl = document.createElement('span')
+              lbl.style.cssText =
+                'font-size:11px;color:var(--color-text-tertiary)'
+              lbl.textContent = row[j + 3]
+              fr.appendChild(arr)
+              fr.appendChild(lbl)
+              j++
+            } else {
+              fr.appendChild(arr)
+            }
+          }
+        }
+        diagram.appendChild(fr)
+      })
+
+      if (s.state) {
+        const sp = document.createElement('span')
+        const stMap = {
+          pending: ['st-pending', 'PENDING'],
+          running: ['st-running', 'RUNNING'],
+          done: ['st-done', 'DONE'],
+          paused: ['st-paused', 'PAUSED'],
+        }
+        const [cls, lbl] = stMap[s.state]
+        sp.className = 'state-pill ' + cls
+        sp.innerHTML = `<i class="ti ti-database" style="font-size:12px" aria-hidden="true"></i> Job state: ${lbl}`
+        body.appendChild(actors)
+        body.appendChild(desc)
+        body.appendChild(diagram)
+        body.appendChild(sp)
+      } else {
+        body.appendChild(actors)
+        body.appendChild(desc)
+        body.appendChild(diagram)
+      }
+
+      card.appendChild(hdr)
+      card.appendChild(body)
+      step.appendChild(card)
+      wrap.appendChild(step)
+    })
+
+    document.getElementById('btnPrev').disabled =
+      currentStep === 0 && currentPhase === 0
+    const isLast = currentStep === ph.steps.length - 1
+    const isLastPhase = currentPhase === phases.length - 1
+    const btn = document.getElementById('btnNext')
+    if (isLast && isLastPhase) {
+      btn.textContent = 'Flujo completo ✓'
+      btn.disabled = true
+    } else if (isLast) {
+      btn.innerHTML =
+        'Siguiente acto <i class="ti ti-arrow-right" aria-hidden="true"></i>'
+    } else {
+      btn.innerHTML =
+        'Siguiente <i class="ti ti-arrow-right" aria-hidden="true"></i>'
+    }
+    btn.disabled = isLast && isLastPhase
+  }
+
+  function navigate(dir) {
+    const ph = phases[currentPhase]
+    if (dir === 1) {
+      if (currentStep < ph.steps.length - 1) {
+        currentStep++
+        openStep = currentStep
+      } else if (currentPhase < phases.length - 1) {
+        currentPhase++
+        currentStep = 0
+        openStep = 0
+      }
+    } else {
+      if (currentStep > 0) {
+        currentStep--
+        openStep = currentStep
+      } else if (currentPhase > 0) {
+        currentPhase--
+        currentStep = phases[currentPhase].steps.length - 1
+        openStep = currentStep
+      }
+    }
+    renderPhase()
+  }
+
+  renderPhase()
+</script>
