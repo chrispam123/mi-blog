@@ -1,36 +1,55 @@
 <style>
+  /* Aseguramos que los iconos de Tabler se muestren correctamente */
+  @import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css');
+
   * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
   }
+
+  /* Contenedor principal con variables de respaldo (fallbacks) */
   .w {
-    font-family: var(--font-sans);
+    font-family: var(
+      --font-sans,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      Oxygen,
+      Ubuntu,
+      Cantarell,
+      sans-serif
+    );
     padding: 20px 16px 28px;
     max-width: 860px;
     margin: 0 auto;
+    background: var(--color-background-primary, #fff);
+    color: var(--color-text-primary, #111);
   }
 
+  /* Pestañas de Fases */
   .phase-tabs {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     margin-bottom: 20px;
     flex-wrap: wrap;
   }
   .ptab {
-    padding: 7px 14px;
+    padding: 8px 16px;
     border-radius: 20px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    border: 1px solid var(--color-border-secondary);
-    background: var(--color-background-secondary);
-    color: var(--color-text-secondary);
-    transition: all 0.2s;
+    border: 1px solid var(--color-border-secondary, #ddd);
+    background: var(--color-background-secondary, #f9f9f6);
+    color: var(--color-text-secondary, #666);
+    transition: all 0.2s ease;
   }
   .ptab.active {
     border-color: transparent;
-    color: #fff;
+    color: #fff !important;
   }
   .ptab.p0.active {
     background: #534ab7;
@@ -42,38 +61,44 @@
     background: #993c1d;
   }
 
+  /* Títulos de fase */
   .phase-title {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--color-text-primary);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-primary, #111);
     margin-bottom: 4px;
   }
   .phase-sub {
-    font-size: 12px;
-    color: var(--color-text-secondary);
-    margin-bottom: 18px;
+    font-size: 13px;
+    color: var(--color-text-secondary, #666);
+    margin-bottom: 20px;
   }
 
+  /* Contenedor de pasos y conector vertical */
   .steps-wrap {
     position: relative;
+    margin-top: 20px;
   }
   .step-connector {
     position: absolute;
     left: 21px;
     top: 0;
     bottom: 0;
-    width: 1px;
-    background: var(--color-border-tertiary);
+    width: 2px;
+    background: var(--color-border-tertiary, #eaeae6);
     z-index: 0;
   }
 
+  /* Estructura de fila de paso */
   .step {
     display: flex;
-    gap: 14px;
-    margin-bottom: 4px;
+    gap: 16px;
+    margin-bottom: 12px;
     position: relative;
     z-index: 1;
   }
+
+  /* Indicador numérico a la izquierda */
   .step-dot-wrap {
     display: flex;
     flex-direction: column;
@@ -87,78 +112,82 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
-    font-weight: 500;
-    border: 1px solid var(--color-border-secondary);
-    background: var(--color-background-primary);
-    color: var(--color-text-secondary);
-    transition: all 0.3s;
+    font-size: 14px;
+    font-weight: 600;
+    border: 2px solid var(--color-border-secondary, #ccc);
+    background: var(--color-background-primary, #fff);
+    color: var(--color-text-secondary, #666);
+    transition: all 0.3s ease;
     cursor: pointer;
-    flex-shrink: 0;
   }
   .step-dot.active-dot {
     border-color: transparent;
     color: #fff;
   }
-  .p0 .step-dot.active-dot {
+  .w.p0 .step-dot.active-dot {
     background: #534ab7;
   }
-  .p1 .step-dot.active-dot {
+  .w.p1 .step-dot.active-dot {
     background: #0f6e56;
   }
-  .p2 .step-dot.active-dot {
+  .w.p2 .step-dot.active-dot {
     background: #993c1d;
   }
+
   .step-dot.done-dot {
     border-color: transparent;
     color: #fff;
     background: #639922;
   }
-
   .step-line {
-    width: 1px;
+    width: 2px;
     flex: 1;
-    min-height: 4px;
-    background: var(--color-border-tertiary);
+    min-height: 20px;
+    background: var(--color-border-tertiary, #eaeae6);
   }
 
+  /* Tarjeta contenedora de la información */
   .step-card {
     flex: 1;
-    border: 1px solid var(--color-border-tertiary);
-    border-radius: var(--border-radius-lg);
-    background: var(--color-background-primary);
-    margin-bottom: 8px;
+    border: 1px solid var(--color-border-tertiary, #eaeae6);
+    border-radius: 8px;
+    background: var(--color-background-primary, #fff);
     overflow: hidden;
-    transition: border-color 0.3s;
+    transition: border-color 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
-  .step-card.active-card {
+  .w.p0 .step-card.active-card {
     border-color: #afa9ec;
   }
-  .p1 .step-card.active-card {
+  .w.p1 .step-card.active-card {
     border-color: #5dcaa5;
   }
-  .p2 .step-card.active-card {
+  .w.p2 .step-card.active-card {
     border-color: #f0997b;
   }
 
+  /* Cabecera del paso */
   .step-header {
-    padding: 12px 14px;
+    padding: 14px 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
+    background: var(--color-background-primary, #fff);
   }
   .step-header-left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
   }
   .step-num-badge {
     font-size: 11px;
-    font-weight: 500;
-    padding: 2px 7px;
-    border-radius: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     flex-shrink: 0;
   }
   .p0-badge {
@@ -173,99 +202,91 @@
     background: #faece7;
     color: #4a1b0c;
   }
-  @media (prefers-color-scheme: dark) {
-    .p0-badge {
-      background: #26215c;
-      color: #cecbf6;
-    }
-    .p1-badge {
-      background: #04342c;
-      color: #9fe1cb;
-    }
-    .p2-badge {
-      background: #4a1b0c;
-      color: #f5c4b3;
-    }
-  }
+
   .step-title {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--color-text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary, #111);
   }
   .step-chevron {
-    font-size: 16px;
-    color: var(--color-text-tertiary);
-    transition: transform 0.2s;
-    flex-shrink: 0;
+    font-size: 18px;
+    color: var(--color-text-tertiary, #999);
+    transition: transform 0.2s ease;
+    display: flex;
+    align-items: center;
   }
   .step-chevron.open {
     transform: rotate(180deg);
   }
 
+  /* Cuerpo colapsable */
   .step-body {
-    padding: 0 14px;
+    padding: 0 16px;
     max-height: 0;
     overflow: hidden;
     transition:
-      max-height 0.35s ease,
-      padding 0.2s;
+      max-height 0.3s ease-out,
+      padding 0.3s ease;
+    background: var(--color-background-primary, #fff);
   }
   .step-body.open {
-    padding: 0 14px 14px;
-    max-height: 600px;
+    padding: 0 16px 18px;
+    max-height: 1000px;
   }
 
+  /* Actores intervinientes */
   .actors-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 10px;
+    gap: 8px;
+    margin-bottom: 12px;
   }
   .actor {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    font-size: 11px;
-    padding: 3px 8px;
-    border-radius: 6px;
-    border: 1px solid var(--color-border-tertiary);
-    background: var(--color-background-secondary);
-    color: var(--color-text-secondary);
-  }
-  .actor i {
-    font-size: 13px;
-  }
-
-  .step-desc {
-    font-size: 12px;
-    color: var(--color-text-secondary);
-    line-height: 1.6;
-    margin-bottom: 10px;
-  }
-
-  .flow-diagram {
-    border: 1px solid var(--color-border-tertiary);
-    border-radius: var(--border-radius-md);
-    background: var(--color-background-secondary);
-    padding: 10px 12px;
-  }
-  .flow-row {
-    display: flex;
-    align-items: center;
     gap: 6px;
-    flex-wrap: wrap;
-    margin-bottom: 4px;
-  }
-  .flow-row:last-child {
-    margin-bottom: 0;
-  }
-  .fnode {
     font-size: 11px;
     font-weight: 500;
     padding: 4px 10px;
     border-radius: 6px;
-    white-space: nowrap;
+    border: 1px solid var(--color-border-tertiary, #eaeae6);
+    background: var(--color-background-secondary, #f9f9f6);
+    color: var(--color-text-secondary, #555);
   }
+
+  .step-desc {
+    font-size: 13px;
+    color: var(--color-text-secondary, #444);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+  /* Caja del diagrama de flujo */
+  .flow-diagram {
+    border: 1px solid var(--color-border-tertiary, #eaeae6);
+    border-radius: 6px;
+    background: var(--color-background-secondary, #f9f9f6);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .fnode {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  }
+
+  /* Esquema de colores para los nodos */
   .fn-purple {
     background: #eeedfe;
     color: #3c3489;
@@ -311,7 +332,123 @@
     color: #501313;
     border: 1px solid #f09595;
   }
+
+  .farr {
+    color: var(--color-text-tertiary, #999);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Barra de Progreso */
+  .progress-bar-wrap {
+    margin-bottom: 20px;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-secondary, #666);
+    margin-bottom: 6px;
+  }
+  .progress-track {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--color-border-tertiary, #eaeae6);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .p-fill-0 {
+    background: #534ab7;
+  }
+  .p-fill-1 {
+    background: #0f6e56;
+  }
+  .p-fill-2 {
+    background: #993c1d;
+  }
+
+  /* Fila de navegación inferior */
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border-tertiary, #eaeae6);
+  }
+  .nav-btn {
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--color-border-secondary, #ccc);
+    background: var(--color-background-secondary, #f9f9f6);
+    color: var(--color-text-primary, #111);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .nav-btn:hover:not(:disabled) {
+    background: var(--color-border-tertiary, #eaeae6);
+  }
+  .nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .nav-btn.primary {
+    color: #fff !important;
+  }
+  .w.p0 .nav-btn.primary {
+    background: #534ab7;
+    border-color: #534ab7;
+  }
+  .w.p0 .nav-btn.primary:hover:not(:disabled) {
+    background: #3c3489;
+  }
+  .w.p1 .nav-btn.primary {
+    background: #0f6e56;
+    border-color: #0f6e56;
+  }
+  .w.p1 .nav-btn.primary:hover:not(:disabled) {
+    background: #085041;
+  }
+  .w.p2 .nav-btn.primary {
+    background: #993c1d;
+    border-color: #993c1d;
+  }
+  .w.p2 .nav-btn.primary:hover:not(:disabled) {
+    background: #712b13;
+  }
+
+  .step-counter {
+    font-size: 13px;
+    color: var(--color-text-secondary, #666);
+    font-weight: 500;
+  }
+
+  /* Modos oscuros explícitos por si la app los usa */
   @media (prefers-color-scheme: dark) {
+    .p0-badge {
+      background: #26215c;
+      color: #cecbf6;
+    }
+    .p1-badge {
+      background: #04342c;
+      color: #9fe1cb;
+    }
+    .p2-badge {
+      background: #4a1b0c;
+      color: #f5c4b3;
+    }
     .fn-purple {
       background: #26215c;
       color: #cecbf6;
@@ -357,137 +494,6 @@
       color: #f7c1c1;
       border-color: #a32d2d;
     }
-  }
-  .farr {
-    color: var(--color-text-tertiary);
-    font-size: 12px;
-    flex-shrink: 0;
-  }
-
-  .state-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-top: 8px;
-  }
-  .st-pending {
-    background: #faeeda;
-    color: #633806;
-  }
-  .st-running {
-    background: #e6f1fb;
-    color: #0c447c;
-  }
-  .st-done {
-    background: #eaf3de;
-    color: #173404;
-  }
-  .st-paused {
-    background: #fcebeb;
-    color: #501313;
-  }
-  @media (prefers-color-scheme: dark) {
-    .st-pending {
-      background: #412402;
-      color: #fac775;
-    }
-    .st-running {
-      background: #042c53;
-      color: #b5d4f4;
-    }
-    .st-done {
-      background: #173404;
-      color: #c0dd97;
-    }
-    .st-paused {
-      background: #501313;
-      color: #f7c1c1;
-    }
-  }
-
-  .nav-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 16px;
-  }
-  .nav-btn {
-    padding: 7px 16px;
-    border-radius: var(--border-radius-md);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid var(--color-border-secondary);
-    background: var(--color-background-secondary);
-    color: var(--color-text-primary);
-    transition: all 0.2s;
-  }
-  .nav-btn:hover {
-    background: var(--color-background-primary);
-  }
-  .nav-btn:disabled {
-    opacity: 0.35;
-    cursor: default;
-  }
-  .nav-btn.primary {
-    background: #534ab7;
-    color: #fff;
-    border-color: #534ab7;
-  }
-  .nav-btn.primary:hover {
-    background: #3c3489;
-  }
-  .p1 .nav-btn.primary {
-    background: #0f6e56;
-    border-color: #0f6e56;
-  }
-  .p1 .nav-btn.primary:hover {
-    background: #085041;
-  }
-  .p2 .nav-btn.primary {
-    background: #993c1d;
-    border-color: #993c1d;
-  }
-  .p2 .nav-btn.primary:hover {
-    background: #712b13;
-  }
-  .step-counter {
-    font-size: 12px;
-    color: var(--color-text-secondary);
-  }
-
-  .progress-bar-wrap {
-    margin-bottom: 16px;
-  }
-  .progress-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: var(--color-text-secondary);
-    margin-bottom: 5px;
-  }
-  .progress-track {
-    height: 4px;
-    border-radius: 2px;
-    background: var(--color-border-tertiary);
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.4s ease;
-  }
-  .p-fill-0 {
-    background: #534ab7;
-  }
-  .p-fill-1 {
-    background: #0f6e56;
-  }
-  .p-fill-2 {
-    background: #993c1d;
   }
 </style>
 
