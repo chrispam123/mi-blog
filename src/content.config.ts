@@ -1,7 +1,4 @@
 // content.config.ts
-// Configuración de Content Collections para Astro 5.
-// El loader glob() le dice a Astro que busque todos los archivos
-// Markdown dentro de la carpeta src/content/posts/
 import { defineCollection } from 'astro:content'
 import { z } from 'zod'
 import { glob } from 'astro/loaders'
@@ -12,6 +9,7 @@ const posts = defineCollection({
     title: z.string(),
     date: z.coerce.date(),
     description: z.string().optional(),
+    showArchitectureDiagram: z.boolean().optional(), // ◄ Añadimos esta línea
   }),
 })
 

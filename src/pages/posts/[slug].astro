@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content'
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import DiagramaNocturne from '../../components/DiagramaNocturne.astro' // ◄ 1. Importamos el componente
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts')
@@ -12,6 +13,9 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props
 const { Content } = await render(post)
+
+// 2. Extraemos la bandera condicional desde post.data
+const { showArchitectureDiagram } = post.data
 
 const formattedDate = post.data.date.toLocaleDateString('es-ES', {
   year: 'numeric',
@@ -31,6 +35,11 @@ const formattedDate = post.data.date.toLocaleDateString('es-ES', {
         )
       }
     </header>
+
+    {
+      /* ◄ 3. Si el post lo solicita en su Frontmatter, inyectamos el diagrama de forma nativa */
+    }
+    {showArchitectureDiagram && <DiagramaNocturne />}
 
     <div class="post-content">
       <Content />
