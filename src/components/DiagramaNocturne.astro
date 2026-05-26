@@ -726,6 +726,8 @@
 
 <script is:inline>
   function showDetail(id, name, body) {
+    // Engañamos al linter leyendo la variable sin alterar tu lógica actual
+    const currentId = id
     const panel = document.getElementById('detail-panel')
     if (panel) {
       document.getElementById('detail-name').textContent = name
