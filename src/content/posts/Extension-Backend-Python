@@ -1,0 +1,87 @@
+---
+title: 'BACKEND Pyhton'
+date: 2026-06-09
+description: 'La IA se atraganta'
+---
+
+**Avance del proyecto Nocturne he decidido cambiar el backend x python nativo y mas adelante intervendarn agentes para el CI 
+**Avance el MVP en local con Terraform y Localstak para no perderse en la selva del monorepo
+**Technical Manifest**. Sirve para que cualquier arquitecto que entre al proyecto entienda no solo *qué* hay, sino *por qué* se tomó cada decisión.
+
+Aquí tienes el **Spec-Driven Development (SDD) de Nocturne MVP - Fase 2 Finalizada**.
+
+---
+
+### 1. Arquitectura del Sistema (The Blueprint)
+Hemos implementado una arquitectura **EDA (Event-Driven Architecture)** basada en el desacoplamiento total de componentes.
+
+*   **Patrón de Diseño:** *Claim Check Pattern*. No enviamos datos pesados por la cola (SQS); enviamos una referencia (ID) y el trabajador (Worker) reclama los datos del almacén (S3).
+*   **Componentes Core:**
+    *   **S3 (El Bunker):** Almacenamiento de objetos inmutable para los JSON de entrada/salida.
+    *   **SQS (El Amortiguador):** Cola de mensajes que garantiza que ninguna solicitud se pierda si el backend está saturado. Incluye una **DLQ (Dead Letter Queue)** para aislamiento de fallos.
+    *   **DynamoDB (El Cerebro):** Base de datos NoSQL que actúa como una **Máquina de Estados** para rastrear el ciclo de vida de cada Job.
+    *   **Lambda (El Músculo):** Computación serverless escalable y efímera.
+
+---
+
+### 2. Lógica de Negocio (The State Machine)
+El sistema no es una simple "función que corre", es un proceso gestionado por estados.
+
+*   **Ciclo de Vida del Job:** `PENDING` → `RUNNING` → `DONE` / `FAILED`.
+*   **Idempotencia:** El Worker verifica en DynamoDB si el Job ya existe antes de procesar, evitando duplicidad de acciones en reintentos de SQS.
+*   **Programación Defensiva:** El código Python valida tipos de datos (`isinstance(data, list)`) antes de operar, asegurando resiliencia ante JSONs mal formados.
+
+---
+
+### 3. Estrategia de Despliegue (Infrastructure as Code)
+Hemos pasado de scripts manuales a una gestión de infraestructura profesional.
+
+*   **Herramienta:** Terraform v1.15+.
+*   **Gestión de Estado (The Vault):** 
+    *   **Backend Remoto:** El mapa de la infraestructura (`.tfstate`) vive en un bucket de S3 **Real en AWS**.
+    *   **S3-Native Locking:** Usamos el bloqueo nativo de S3 para evitar colisiones de escritura en el estado.
+*   **Paridad de Entornos:** 
+    *   Estructura de carpetas `infra/environments/{local,dev,prod}`.
+    *   **Provider Dinámico:** El mismo código de Terraform detecta si debe apuntar a LocalStack (vía DNS `localhost.localstack.cloud`) o a AWS Real.
+*   **Inyección de Dependencias:** Terraform inyecta los nombres de los recursos directamente en las variables de entorno de la Lambda, eliminando el *hardcoding*.
+
+---
+
+### 4. CI/CD (The Quality Gate)
+El repositorio de GitHub no es solo un almacén de código, es un juez automático.
+
+*   **Integración Continua (CI):** 
+    *   **Linter:** Black asegura que el 100% del código siga el estándar estético profesional.
+    *   **Unit Testing:** Pytest + Moto simulan AWS en la memoria RAM para validar la lógica en milisegundos sin coste.
+    *   **Shift Left:** Los errores se detectan en la rama `feature/*` antes de llegar a `develop`.
+*   **Gestión de Dependencias:** Poetry garantiza que las versiones de las librerías sean idénticas en tu PC y en la Lambda de AWS.
+
+---
+
+### 5. Seguridad y Observabilidad (The Shield & The Lens)
+
+*   **Seguridad (IAM):** Aplicamos el **Principio de Privilegio Mínimo**. La Lambda solo tiene permiso para leer el bucket específico y escribir en la tabla específica de Nocturne.
+*   **Identidad:** Uso de **OIDC (OpenID Connect)** para que GitHub hable con AWS sin usar llaves maestras permanentes.
+*   **Observabilidad:** 
+    *   **Logs Estructurados:** AWS Lambda Powertools genera logs en JSON para facilitar búsquedas forenses.
+    *   **Trazabilidad:** X-Ray inyecta un `trace_id` que une el rastro desde SQS hasta el final de la ejecución.
+
+---
+
+### 6. Estado de la "Bala Trazadora" (Lo que ya funciona)
+Hemos demostrado que:
+1.  Un script puede poner un mensaje en SQS y un archivo en S3.
+2.  La infraestructura de Terraform detecta el evento y despierta a la Lambda.
+3.  La Lambda en Python puede leer de S3, procesar la lógica y actualizar DynamoDB.
+4.  Todo el rastro queda grabado en logs profesionales.
+
+---
+
+### ¿Qué sigue? (Próximos pasos de la Especificación)
+
+abordar tres "épicas" de desarrollo:
+
+1.  **Épica de Identidad:** Implementar el cifrado KMS para los `Refresh Tokens` de los usuarios.
+2.  **Épica de YouTube:** Integrar la API v3 de Google, manejando el refresco de tokens OAuth2.
+3.  **Épica de Resiliencia:** Implementar el **Patrón Relay** (relevos de 50 en 50) y el **Lambda-Resumer** para gestionar las cuotas de Google.
+
