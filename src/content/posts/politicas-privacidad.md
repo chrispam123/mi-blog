@@ -1,5 +1,5 @@
 ---
-title: 'Politicas-Nocturne YouTube Extension'
+title: 'Politicas Nocturne YouTube Extension'
 date: 2026-07-16
 description: 'Politicas de Privacidad'
 ---
