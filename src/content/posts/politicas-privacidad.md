@@ -1,12 +1,12 @@
 ---
-title: 'Politicas-NocturneYouTube-Extension'
+title: 'Politicas-NocturneYouTube-Extensiones'
 date: 2026-07-16
 description: 'Politicas de Privacidad'
 ---
 
-Política de Privacidad: NocturneYouTube-Extension
+Políticas de Privacidad: NocturneYouTube-Extensiones
 
-Última actualización: 15 de julio de 2026
+Última actualización: 17 de julio de 2026
 
 En The Nocturne, nos tomamos la seguridad de tu "patrimonio digital" con el máximo rigor técnico. Esta política explica cómo manejamos tus datos
 a través de nuestra infraestructura descentralizada en AWS.
