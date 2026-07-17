@@ -4,7 +4,7 @@ date: 2026-07-16
 description: 'Politicas de Privacidad'
 ---
 
-Política de Privacidad: The Nocturne: YouTube Relic Manager
+Política de Privacidad: NocturneYouTube-Extension
 
 Última actualización: 15 de julio de 2026
 
