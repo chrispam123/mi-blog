@@ -1,5 +1,5 @@
 ---
-title: 'Proyecto NocturneYouTube-Extensiones'
+title: 'Proyecto Nocturne YouTube Extension'
 date: 2026-07-15
 description: 'Proyecto Mistico'
 ---
