@@ -1,5 +1,5 @@
 ---
-title: 'Extensión de YouTube para The Nocturne'
+title: 'Análisis'
 date: 2026-03-24
 description: 'Análisis en profundidad de la arquitectura EDA-Serverless y su vista por capas.'
 showArchitectureDiagram: true
