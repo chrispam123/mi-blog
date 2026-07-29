@@ -1,5 +1,5 @@
 ---
-title: 'Proyecto Nocturne YouTube Extension'
+title: 'Nocturne'
 date: 2026-07-15
 description: 'Proyecto Mistico'
 ---
@@ -10,15 +10,13 @@ description: 'Proyecto Mistico'
 
 </div>
 
-<!-- Importamos la fuente MedievalSharp desde Google Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
+¿Alguna vez has querido cambiar de cuenta de YouTube pero te ha frenado la
+idea de perder todos tus canales y playlists favoritas?
 
-<!-- Bloque de texto gótico centrado -->
-<div style="font-family: 'MedievalSharp', cursive; font-size: 1.6rem; text-align: center; margin: 2rem 0; line-height: 1.4;">
-¿Alguna vez has querido cambiar de cuenta pero te ha frenado la idea de perder todos tus canales y playlists favoritas? De esa frustración nace The Nocturne, una extensión de Chrome creada con sensibilidad y pensada para facilitarte la vida. Con ella, podrás exportar fácilmente todo tu contenido a otras cuentas de forma rápida y sin complicaciones. No dejes que tus listas de reproducción se queden atrás; con The Nocturne, tu contenido favorito te acompaña siempre que lo necesites
-</div>
+Nocturne es una extensión de Chrome pensada para facilitarte la migración
+de tu contenido de YouTube entre cuentas. Con ella podrás exportar tus
+suscripciones y listas de reproducción, y recrearlas en la cuenta que elijas,
+de forma rápida y sin complicaciones.
 
 [Politicas de Privacidad](https://christiangohring.com/posts/politicas-privacidad/)
 
