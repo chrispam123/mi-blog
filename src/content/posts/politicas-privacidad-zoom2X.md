@@ -4,15 +4,14 @@ date: 2026-08-10
 description: 'Politicas de Privacidad'
 ---
 
-zoom2X es una aplicación de captura y grabación de pantalla para Windows.
-Esta política explica qué información accede, usa y —en los únicos casos
-en que aplica— transmite.
+zoom2X es una aplicación de captura y grabación de pantalla para Windows con facilidad de uso.
+Estas políticas explican qué información accede, usa y las aplica en que casos.
 
 RESUMEN
 
 zoom2X no requiere cuenta ni inicio de sesión. No recolecta ni transmite
 datos personales de forma automática. Toda captura, grabación y
-configuración se guarda localmente en tu equipo, en la carpeta que vos
+configuración se guarda localmente en tu equipo, en la carpeta que
 elijas. La única excepción es un reporte de errores anónimo y opcional,
 descrito más abajo.
 
@@ -28,17 +27,16 @@ PERMISOS QUE USA LA APLICACIÓN
 
 zoom2X necesita acceso a las siguientes funciones de Windows para operar.
 En todos los casos, los datos capturados se procesan localmente y solo se
-guardan si vos decidís grabar o capturar algo:
+guardan si el usuario decide grabar o capturar algo:
 
 - Pantalla: para capturar imágenes y video de tu escritorio.
 - Micrófono (opcional): para incluir audio en tus grabaciones, si lo
-  activás.
+  autoriza el usuario.
 - Cámara (opcional): para mostrar tu webcam superpuesta en la grabación,
-  si lo activás.
+  si lo autoriza el usuario.
 
-Ninguno de estos accesos se usa fuera del momento en que vos iniciás una
-captura o grabación. zoom2X no accede a estos dispositivos en segundo
-plano.
+Ninguno de estos accesos se usa fuera del momento en que se captura o grabación.
+zoom2X no accede a estos dispositivos en segundo plano.
 
 REPORTES DE FALLOS ANÓNIMOS (opcional, desactivado por defecto)
 
@@ -52,7 +50,7 @@ de", la aplicación puede enviar automáticamente:
   app).
 
 No se envía tu nombre, dirección IP asociada a tu identidad, contenido
-de tus grabaciones/capturas, ni ningún archivo personal. Podés
+de tus grabaciones/capturas, ni ningún archivo personal. Puedes
 desactivar este reporte en cualquier momento desde el mismo lugar donde
 lo activaste.
 
@@ -61,13 +59,13 @@ VERIFICACIÓN DE ACTUALIZACIONES
 Al presionar "Buscar actualizaciones" en el panel de configuración, la
 aplicación consulta un archivo público de versión para saber si hay una
 nueva disponible. Esta consulta no envía ningún dato personal — solo se
-activa cuando vos la pedís, nunca en segundo plano.
+activa cuando el usuario lo activa, nunca en segundo plano.
 
 DÓNDE SE GUARDAN TUS DATOS
 
 Tus capturas, grabaciones y configuración se guardan únicamente en tu
 computadora, en la carpeta que elijas desde el panel de configuración.
-zoom2X no tiene acceso a esos archivos una vez guardados, salvo que vos
+zoom2X no tiene acceso a esos archivos una vez guardados, salvo que tú
 mismo los abras o compartas.
 
 MENORES DE EDAD
