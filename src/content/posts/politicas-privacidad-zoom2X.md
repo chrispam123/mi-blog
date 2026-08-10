@@ -15,7 +15,7 @@ configuración se guarda localmente en tu equipo, en la carpeta que
 elijas. La única excepción es un reporte de errores anónimo y opcional,
 descrito más abajo.
 
-QUÉ NO HACE ZOOM2X
+QUÉ NO HACE ZOOM2X.
 
 - No crea cuentas ni perfiles de usuario.
 - No sube tus capturas, grabaciones ni video a ningún servidor.
