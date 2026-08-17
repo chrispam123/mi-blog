@@ -1,5 +1,5 @@
 ---
-title: 'Política de Privacidad — Zoom2X'
+title: 'Política de Privacidad — zoom2X'
 date: 2026-08-10
 description: 'Politicas de Privacidad'
 ---
@@ -15,7 +15,7 @@ configuración se guarda localmente en tu equipo, en la carpeta que
 elijas. La única excepción es un reporte de errores anónimo y opcional,
 descrito más abajo.
 
-QUÉ NO HACE ZOOM2X.
+QUÉ NO HACE zoom2X.
 
 - No crea cuentas ni perfiles de usuario.
 - No sube tus capturas, grabaciones ni video a ningún servidor.
