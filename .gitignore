@@ -17,6 +17,19 @@ pnpm-debug.log*
 .env
 .env.production
 
+# Terraform local state and sensitive variables
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
 # macOS-specific files
 .DS_Store
 
