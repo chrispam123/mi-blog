@@ -39,6 +39,18 @@ const formattedDate = post.data.date.toLocaleDateString('es-ES', {
       }
     </header>
 
+    {
+      post.data.image && (
+        <figure class="post-hero">
+          <img
+            src={post.data.image}
+            alt={post.data.title}
+            class="post-hero-image"
+          />
+        </figure>
+      )
+    }
+
     {/* Si el post solicita el diagrama de arquitectura, lo inyecta */}
     {showArchitectureDiagram && <DiagramaNocturne />}
 
@@ -62,13 +74,13 @@ const formattedDate = post.data.date.toLocaleDateString('es-ES', {
   .post {
     display: flex;
     flex-direction: column;
-    gap: 3rem;
+    gap: 1.75rem;
   }
   .post-header {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    padding-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
     border-bottom: 1px solid var(--color-border);
   }
   .post-date {
@@ -79,19 +91,29 @@ const formattedDate = post.data.date.toLocaleDateString('es-ES', {
   }
   .post-title {
     font-family: var(--font-display);
-    font-size: 2.4rem;
-    font-weight: 300;
+    font-size: 28px;
+    font-weight: 700;
     line-height: 1.15;
-    color: var(--color-text);
+    color: var(--color-accent);
   }
   .post-description {
-    font-size: 0.9rem;
+    font-size: 17px;
+    font-weight: 400;
     color: var(--color-muted);
     line-height: 1.6;
     font-style: italic;
   }
+  .post-hero {
+    margin: 0;
+  }
+  .post-hero-image {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
   .post-content {
-    font-size: 1rem;
+    font-size: 17px;
+    font-weight: 400;
     line-height: 1.85;
   }
   .post-content :global(p) {
@@ -99,14 +121,14 @@ const formattedDate = post.data.date.toLocaleDateString('es-ES', {
   }
   .post-content :global(h2) {
     font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 300;
+    font-size: 28px;
+    font-weight: 700;
     margin: 2.5rem 0 1rem;
   }
   .post-content :global(h3) {
     font-family: var(--font-display);
-    font-size: 1.2rem;
-    font-weight: 300;
+    font-size: 24px;
+    font-weight: 700;
     margin: 2rem 0 0.75rem;
   }
   .post-footer {

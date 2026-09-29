@@ -18,18 +18,35 @@ const posts = (await getCollection('posts')).sort(
     {
       posts.map((post) => (
         <li class="post-item">
-          <time class="post-date">
-            {post.data.date.toLocaleDateString('es-ES', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </time>
-          <a href={`/posts/${post.id}`} class="post-title">
-            {post.data.title}
-          </a>
-          {post.data.description && (
-            <p class="post-description">{post.data.description}</p>
+          <div class="post-copy">
+            <time class="post-date">
+              {post.data.date.toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </time>
+            <a href={`/posts/${post.id}`} class="post-title">
+              {post.data.title}
+            </a>
+            {post.data.description && (
+              <p class="post-description">{post.data.description}</p>
+            )}
+          </div>
+          {post.data.image && (
+            <a
+              href={`/posts/${post.id}`}
+              class="post-image-link"
+              aria-label={`Leer ${post.data.title}`}
+            >
+              <img
+                src={post.data.image}
+                alt={post.data.title}
+                class="post-image"
+                style={`object-position: ${post.data.imagePosition ?? 'center center'}`}
+                loading="lazy"
+              />
+            </a>
           )}
         </li>
       ))
@@ -42,10 +59,17 @@ const posts = (await getCollection('posts')).sort(
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 3.5rem;
+    gap: 2.25rem;
   }
 
   .post-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 160px;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  .post-copy {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
@@ -60,11 +84,11 @@ const posts = (await getCollection('posts')).sort(
 
   .post-title {
     font-family: var(--font-display);
-    font-size: 1.6rem;
-    font-weight: 300;
+    font-size: 28px;
+    font-weight: 700;
     line-height: 1.2;
     text-decoration: none;
-    color: var(--color-text);
+    color: var(--color-accent);
   }
 
   .post-title:hover {
@@ -73,8 +97,34 @@ const posts = (await getCollection('posts')).sort(
   }
 
   .post-description {
-    font-size: 0.85rem;
+    font-size: 17px;
+    font-weight: 400;
     color: var(--color-muted);
     line-height: 1.6;
+  }
+
+  .post-image-link {
+    display: block;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    background: var(--color-border);
+  }
+
+  .post-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @media (max-width: 640px) {
+    .post-item {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .post-image-link {
+      width: min(100%, 240px);
+    }
   }
 </style>
