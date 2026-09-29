@@ -20,20 +20,45 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
     <title>{title} — Autopoiesis</title>
+    <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml" />
+    <link
+      rel="icon"
+      href="/brand/favicon-32.png"
+      sizes="32x32"
+      type="image/png"
+    />
+    <link
+      rel="icon"
+      href="/brand/favicon-16.png"
+      sizes="16x16"
+      type="image/png"
+    />
+    <link rel="shortcut icon" href="/brand/favicon.ico" />
 
-    <!-- Google Fonts: Cormorant Garamond para títulos, Crimson Pro para cuerpo -->
-    <!-- Dos fuentes serif con personalidades distintas pero familia común -->
+    <!-- Google Fonts: PT Serif para títulos y cuerpo -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&display=swap"
       rel="stylesheet"
     />
   </head>
 
   <body>
+    <div class="side-art side-art-left" aria-hidden="true">
+      <img src="/images/layout/caras11-transparent.png" alt="" />
+    </div>
+    <div class="side-art side-art-right" aria-hidden="true">
+      <img src="/images/layout/caras11-transparent.png" alt="" />
+    </div>
     <div class="site-wrapper">
       <header class="site-header">
+        <img
+          src="/brand/favicon.svg"
+          alt=""
+          class="site-mark"
+          aria-hidden="true"
+        />
         <a href="/" class="site-title">Autopoiesis</a>
         <span class="site-tagline">notas y pensamientos</span>
       </header>
@@ -50,6 +75,40 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
   </body>
 </html>
 
+<script is:inline>
+  ;(() => {
+    const sideArtImages = document.querySelectorAll('.side-art img')
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const desktopLayout = window.matchMedia('(min-width: 1101px)')
+    let animationFrame = 0
+
+    if (reducedMotion.matches || !desktopLayout.matches) return
+
+    const updateSideArt = () => {
+      animationFrame = 0
+      const scrollPosition =
+        window.scrollY || document.documentElement.scrollTop
+      const offset = scrollPosition * -0.12
+
+      sideArtImages.forEach((image) => {
+        image.style.transform = `translateY(${offset}px)`
+      })
+    }
+
+    const scheduleUpdate = () => {
+      if (!animationFrame) {
+        animationFrame = window.requestAnimationFrame(updateSideArt)
+      }
+    }
+
+    window.addEventListener('scroll', scheduleUpdate, {
+      passive: true,
+      capture: true,
+    })
+    updateSideArt()
+  })()
+</script>
+
 <style is:global>
   /* ============================================================
      VARIABLES: el sistema de diseño completo en un solo lugar.
@@ -57,13 +116,13 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
   ============================================================ */
   :root {
     --color-bg: #f7f3ed; /* crema cálido, como papel envejecido */
-    --color-text: #1a1612; /* casi negro, más cálido que #000 */
-    --color-muted: #8a7f74; /* para fechas, metadatos, footer */
-    --color-accent: #2c1810; /* marrón oscuro para el título del blog */
+    --color-text: #1a1612;
+    --color-muted: #1a1612;
+    --color-accent: #899a84;
     --color-border: #e0d8ce; /* líneas sutiles */
 
-    --font-display: 'Cormorant Garamond', Georgia, serif; /* títulos */
-    --font-body: 'Crimson Pro', Georgia, serif; /* cuerpo */
+    --font-display: 'PT Serif', Georgia, serif;
+    --font-body: 'PT Serif', Georgia, serif;
 
     --max-width: 680px; /* ancho máximo del contenido */
     --spacing-unit: 1rem;
@@ -83,11 +142,13 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
   }
 
   body {
+    position: relative;
     background-color: var(--color-bg);
     color: var(--color-text);
     font-family: var(--font-body);
-    font-weight: 300;
-    line-height: 1.75;
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 1.7;
     /* Suavizado de fuentes para que las serif se vean bien en pantalla */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -95,6 +156,8 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
 
   /* Contenedor principal centrado */
   .site-wrapper {
+    position: relative;
+    z-index: 1;
     max-width: var(--max-width);
     margin: 0 auto;
     padding: 0 var(--spacing-unit);
@@ -104,7 +167,7 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
   .site-header {
     padding: 4rem 0 3rem;
     border-bottom: 1px solid var(--color-border);
-    margin-bottom: 4rem;
+    margin-bottom: 2.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -118,6 +181,56 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
     color: var(--color-accent);
     text-decoration: none;
     text-transform: uppercase;
+  }
+
+  .site-mark {
+    display: block;
+    width: 2.5rem;
+    height: 2.5rem;
+    object-fit: contain;
+    margin-bottom: 0.5rem;
+  }
+
+  .side-art {
+    position: fixed;
+    top: 0;
+    height: 100vh;
+    width: min(360px, calc((100vw - var(--max-width)) / 2 - 2rem));
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0.18;
+    z-index: 0;
+  }
+
+  .side-art img {
+    position: absolute;
+    top: 0;
+    width: 210%;
+    max-width: none;
+    height: auto;
+    will-change: transform;
+  }
+
+  .side-art-left {
+    left: 0;
+  }
+
+  .side-art-left img {
+    left: 0;
+  }
+
+  .side-art-right {
+    right: 0;
+  }
+
+  .side-art-right img {
+    left: -110%;
+  }
+
+  @media (max-width: 1100px) {
+    .side-art {
+      display: none;
+    }
   }
 
   .site-title:hover {
@@ -149,7 +262,8 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
   h2,
   h3 {
     font-family: var(--font-display);
-    font-weight: 300;
+    font-weight: 700;
+    color: var(--color-accent);
     line-height: 1.2;
   }
 
