@@ -259,3 +259,242 @@ window.setPhysics = function(state) {
 };
 </script>
 Este flujo es exactamente lo que tenía dibujado en el papel y lo que buscaba que el editor resolviera. Pero una cosa es la teoría sobre un diagrama, y otra muy distinta —y bastante más dura— es bajar todo esto a código real y dejarlo desplegado en producción.
+
+### De la teoría a la trinchera: arquitectura y retos técnicos
+
+Antes de tirar una sola línea de código, necesitaba una vista de pájaro de Aether (así decidí llamar al editor tras darle unas cuantas vueltas al nombre). Ya tenía el núcleo conceptual claro y empezaron a brotar las primeras ramas de la experiencia: un sistema de zoom semántico —leo mucho a Bret Victor y quería adaptar su principio de cambiar la naturaleza de lo que ves para facilitar la comprensión humana de sistemas complejos a una parte de Aether que aún no tenía del todo elaborada—; luego surgieron ideas como un teclado inmersivo y marginal, una interfaz nada invasiva e incluso incorporar sonido ambiental de fondo, porque sé por experiencia propia cuánto ayuda a entrar en estado de flujo al escribir.
+
+En mi cabeza dividí el proyecto en dos planos muy claros: por un lado, la UX, centrada en sentir que estás esculpiendo las ideas con las manos; por otro, una UI limpia y concisa. En este proyecto decidí que la función debía prevalecer sobre la forma. Y lo remarco porque en los tiempos que corren suelo disfrutar diseñando proyectos muy cargados de detalle visual, donde a veces la forma manda sobre la función. Sin embargo, siempre intento mantener el equilibrio evaluando el contexto y la intención real de lo que construyo, buscando que el resultado refleje mi esencia y resuelva el problema sin ruido.
+
+Con esa visión madura sobre la mesa, hice lo que hago siempre: parar de teorizar, bajar al barro para construir un MVP e iterar sin descanso, pero diseñando desde el primer día con la mente puesta en que la base debe escalar y comportarse como un producto funcional real: **un editor de texto que se ejecute en cualquier navegador, funcione en local y se sincronice con la nube.**
+
+### El personaje central: el lienzo y la arquitectura híbrida ###
+Para que Aether funcionara en la vida real, tenía que empezar diseñando al personaje central de la historia: **el lienzo donde se escribe.** Necesitaba tener músculo suficiente para responder con precisión táctil al teclear y, al mismo tiempo, contar con el motor visual capaz de sostener la transición entre los estados Vapor, Líquido y Cristal sin explotar ni romperse cuando hubiera decenas de ideas en pantalla.
+
+Investigando cómo resolver este equilibrio en el navegador, me encontré de frente con dos caminos clásicos y sus respectivas trampas:
+
+**Opción A: DOM puro (contenteditable / ProseMirror / Lexical)**
+
+Todo ingeniero que ha intentado construir un editor profesional sobre contenteditable nativo termina sufriendo. Cada navegador interpreta las selecciones, los saltos de línea, los eventos input y los atajos de teclado de forma distinta e inconsistente. Además, si llevas esto a un lienzo infinito con cientos de nodos en estado Vapor, el árbol del DOM colapsa: los recálculos de layout y reflow del motor de renderizado (Blink o WebKit) hunden los FPS en cuanto haces zoom o te desplazas por el espacio.
+
+**Opción B: Canvas / WebGL puro (el camino de Figma o Google Docs)**
+
+Aquí ganas control milimétrico de cada fotograma a 120 Hz: zoom infinito, partículas de vapor, transiciones fluidas y cero problemas de reflow CSS. La trampa mortal es que te obliga a reimplementar desde cero todo el universo de la tipografía y la entrada de texto: text shaping (ligaduras y pares de kerning, lo que implica compilar HarfBuzz a WebAssembly), algoritmos de salto de línea multiidioma (como Knuth-Plass), soporte completo de IME para caracteres compuestos (desde una simple tilde á hasta teclados asiáticos 漢字) y accesibilidad, ya que un canvas es una caja negra ciega para los lectores de pantalla.
+
+La respuesta estaba en no elegir ciegamente una trinchera u otra, sino en combinar lo mejor de ambos mundos mediante una **Arquitectura Híbrida Desacoplada (Hybrid Layering),** el mismo enfoque por capas que utilizan herramientas modernas como Figma o Linear:
+
+**Los estados Niebla y Fluido viven en el Canvas:**
+Cuando te mueves por el lienzo infinito conectando ideas, navegando por constelaciones o haciendo zoom semántico, el **canvas** toma el control de la cámara espacial, las fuerzas gravitatorias entre bloques y las partículas a 120 FPS.
+
+**El bloque activo de edición usa un DOM Overlay quirúrgico:**
+En el instante en que haces clic sobre una nube de pensamiento o entras al estado Cristal para redactar en profundidad, se proyecta un elemento nativo del DOM sincronizado al milímetro con las coordenadas del Canvas. Así obtienes tildes perfectas, atajos nativos del sistema operativo, autocorrector, dictado por voz, accesibilidad real y renderizado tipográfico subpíxel, conservando la libertad espacial del lienzo justo debajo.
+
+**Desacoplamiento absoluto del modelo (el Core):**
+Por debajo de ambas capas visuales, el texto no se guarda como un **Hola** ni como una cadena plana. Se modela como un Grafo Semántico: nodos de pensamiento con pesos gravitatorios, nivel de densidad (Vapor, Líquido o Cristal) y marcas temporales.
+Aqui una visualización de esta Arquitectura Híbrida Desacoplada:
+<div id="aetherLayersWrapper" style="position: relative; margin: 2rem auto; border-radius: 16px; transition: all 0.25s ease;">
+  <svg id="aetherLayersSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 660" width="1160" height="660" style="max-width: 100%; height: auto; background: #06080E; display: block; margin: 0 auto; border-radius: 16px; user-select: none;">
+    <defs>
+      <radialGradient id="bgLayers" cx="50%" cy="35%" r="80%">
+        <stop offset="0%" stop-color="#141B2D" />
+        <stop offset="100%" stop-color="#06080E" />
+      </radialGradient>
+      <filter id="glowL" x="-25%" y="-25%" width="150%" height="150%">
+        <feGaussianBlur stdDeviation="5" result="blur" />
+        <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+      </filter>
+      <filter id="shadowL" x="-10%" y="-10%" width="120%" height="120%">
+        <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.65" />
+      </filter>
+      <marker id="arrUp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1 L 10 5 L 0 9 z" fill="#39FF14" />
+      </marker>
+      <marker id="arrDown" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1 L 10 5 L 0 9 z" fill="#FF007F" />
+      </marker>
+      <style>
+        .mono { font-family: 'Fira Code', 'Consolas', monospace; }
+        .sans { font-family: 'Inter', 'Segoe UI', sans-serif; }
+        .btn { cursor: pointer; }
+        .btn:hover rect { stroke-width: 2.5; filter: brightness(1.2); }
+        .layer-card { cursor: pointer; }
+        .layer-card rect.card-box { transition: stroke-width 0.2s ease, fill 0.2s ease, filter 0.2s ease; }
+        .layer-card:hover rect.card-box { stroke-width: 3; filter: brightness(1.25); }
+        @keyframes flowUp { to { stroke-dashoffset: -24; } }
+        @keyframes flowDown { to { stroke-dashoffset: 24; } }
+        .pipe-up { stroke-dasharray: 6 6; animation: flowUp 0.9s linear infinite; }
+        .pipe-down { stroke-dasharray: 6 6; animation: flowDown 0.9s linear infinite; }
+      </style>
+    </defs>
+    <rect width="1160" height="660" rx="16" fill="url(#bgLayers)" />
+    <!-- CABECERA HUD -->
+    <g transform="translate(35, 20)">
+      <text x="0" y="22" class="mono" font-size="18" font-weight="bold" fill="#FFFFFF">🏛️ Arquitectura Híbrida Desacoplada (Hybrid Layering)</text>
+      <text x="0" y="42" class="sans" font-size="12" fill="#94A3B8">Una vista de pajaro de las 3 capas</text>
+      <g class="btn" transform="translate(745, 6)" onclick="window.simulateLayerFlow()">
+        <rect width="215" height="36" rx="18" fill="#072E18" stroke="#39FF14" stroke-width="2" pointer-events="all" />
+        <text x="107" y="23" class="mono" font-size="11" font-weight="bold" fill="#39FF14" text-anchor="middle" pointer-events="none">⚡ Simular Ciclo de Datos</text>
+      </g>
+      <g class="btn" transform="translate(975, 6)" onclick="window.toggleLayersExpand()">
+        <rect id="btn-l-expand-rect" width="115" height="36" rx="18" fill="#1E293B" stroke="#94A3B8" stroke-width="1.5" pointer-events="all" />
+        <text id="btn-l-expand-text" x="57" y="23" class="mono" font-size="11" font-weight="bold" fill="#FFFFFF" text-anchor="middle" pointer-events="none">⛶ Ampliar</text>
+      </g>
+    </g>
+    <!-- TUBERÍAS LATERALES DE FLUJO BIDIRECCIONAL -->
+    <g>
+      <line x1="85" y1="145" x2="85" y2="480" stroke="#2A0818" stroke-width="6" stroke-linecap="round" />
+      <line class="pipe-down" x1="85" y1="145" x2="85" y2="472" stroke="#FF007F" stroke-width="2.5" marker-end="url(#arrDown)" />
+      <rect x="20" y="295" width="130" height="36" rx="10" fill="#2A0818" stroke="#FF007F" stroke-width="1" />
+      <text x="85" y="311" class="mono" font-size="10" font-weight="bold" fill="#FF66B2" text-anchor="middle">INPUT / INTENCIÓN</text>
+      <text x="85" y="324" class="sans" font-size="9" fill="#CBD5E1" text-anchor="middle">Teclado, IME y Gestos</text>
+    </g>
+    <g>
+      <line x1="1075" y1="480" x2="1075" y2="145" stroke="#072E18" stroke-width="6" stroke-linecap="round" />
+      <line class="pipe-up" x1="1075" y1="480" x2="1075" y2="153" stroke="#39FF14" stroke-width="2.5" marker-end="url(#arrUp)" />
+      <rect x="1010" y="295" width="130" height="36" rx="10" fill="#072E18" stroke="#39FF14" stroke-width="1" />
+      <text x="1075" y="311" class="mono" font-size="10" font-weight="bold" fill="#39FF14" text-anchor="middle">PROYECCIÓN 120 FPS</text>
+      <text x="1075" y="324" class="sans" font-size="9" fill="#CBD5E1" text-anchor="middle">Estado a Píxeles y DOM</text>
+    </g>
+    <!-- CAPA 3 UI: DOM HTML -->
+    <g id="layer-3" class="layer-card" transform="translate(175, 85)" filter="url(#shadowL)" onclick="window.selectLayer(3)">
+      <rect id="poly-l3" class="card-box" x="0" y="0" width="810" height="130" rx="16" ry="16" fill="#0B0F19" stroke="#FF007F" stroke-width="2" pointer-events="all" />
+      <rect x="24" y="14" width="235" height="24" rx="12" fill="#2A0818" stroke="#FF007F" stroke-width="1" pointer-events="none" />
+      <text x="141" y="30" class="mono" font-size="11" font-weight="bold" fill="#FF66B2" text-anchor="middle" pointer-events="none">CAPA 3 UI: DOM HTML</text>
+      <text x="280" y="30" class="sans" font-size="12" font-weight="bold" fill="#FFFFFF" pointer-events="none">Interfaz Accesible, IME y Foco Escritura</text>
+      <line x1="24" y1="48" x2="786" y2="48" stroke="#1E293B" stroke-width="1.5" pointer-events="none" />
+      <text x="28" y="70" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Input invisible:</tspan> Captura nativa de teclado, IME multilingüe y lectores de pantalla (a11y).</text>
+      <text x="28" y="92" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Modales de foco puro:</tspan> Superficies limpias de escritura cuando entras en estado "Cristal".</text>
+      <text x="28" y="114" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Herramientas contextuales:</tspan> Menús flotantes de alta fidelidad sin ensuciar el lienzo.</text>
+    </g>
+    <!-- CONECTOR VERTICAL 3 <-> 2 -->
+    <g filter="url(#glowL)">
+      <line x1="560" y1="215" x2="560" y2="245" stroke="#FF007F" stroke-width="2.5" stroke-dasharray="4 3" />
+      <line x1="600" y1="245" x2="600" y2="215" stroke="#00FFFF" stroke-width="2.5" stroke-dasharray="4 3" />
+    </g>
+    <!-- CAPA 2 ENGINE: MOTOR GRÁFICO CANVAS 2D -->
+    <g id="layer-2" class="layer-card" transform="translate(175, 245)" filter="url(#shadowL)" onclick="window.selectLayer(2)">
+      <rect id="poly-l2" class="card-box" x="0" y="0" width="810" height="130" rx="16" ry="16" fill="#0B0F19" stroke="#00FFFF" stroke-width="2" pointer-events="all" />
+      <rect x="24" y="14" width="285" height="24" rx="12" fill="#062833" stroke="#00FFFF" stroke-width="1" pointer-events="none" />
+      <text x="166" y="30" class="mono" font-size="11" font-weight="bold" fill="#00FFFF" text-anchor="middle" pointer-events="none">CAPA 2 ENGINE: MOTOR GRÁFICO CANVAS 2D</text>
+      <text x="328" y="30" class="sans" font-size="12" font-weight="bold" fill="#FFFFFF" pointer-events="none">Renderizado Espacial y Física a 120 FPS</text>
+      <line x1="24" y1="48" x2="786" y2="48" stroke="#1E293B" stroke-width="1.5" pointer-events="none" />
+      <text x="28" y="70" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Lienzo infinito a 120 FPS:</tspan> Gestión fluida de Pan, Zoom y proyección de cámara 2D/3D.</text>
+      <text x="28" y="92" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Materia dinámica:</tspan> Renderiza partículas en estado Vapor y filamentos tensores en estado Fluido.</text>
+      <text x="28" y="114" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Física cognitiva:</tspan> Transformaciones matriciales espaciales y fuerzas magnéticas de atracción.</text>
+    </g>
+    <!-- CONECTOR VERTICAL 2 <-> 1 -->
+    <g filter="url(#glowL)">
+      <line x1="560" y1="375" x2="560" y2="405" stroke="#00FFFF" stroke-width="2.5" stroke-dasharray="4 3" />
+      <line x1="600" y1="405" x2="600" y2="375" stroke="#39FF14" stroke-width="2.5" stroke-dasharray="4 3" />
+    </g>
+    <!-- CAPA 1 DATOS: CORE PURA LOGICA MATEMÁTICAS Y DATOS EN ESPACIO 2D PERO NO PINTA NADA -->
+    <g id="layer-1" class="layer-card" transform="translate(175, 405)" filter="url(#shadowL)" onclick="window.selectLayer(1)">
+      <rect id="poly-l1" class="card-box" x="0" y="0" width="810" height="130" rx="16" ry="16" fill="#0B0F19" stroke="#39FF14" stroke-width="2" pointer-events="all" />
+      <rect x="24" y="14" width="295" height="24" rx="12" fill="#072E18" stroke="#39FF14" stroke-width="1" pointer-events="none" />
+      <text x="171" y="30" class="mono" font-size="11" font-weight="bold" fill="#39FF14" text-anchor="middle" pointer-events="none">CAPA 1: CORE PURA LOGICA NO PINTA NADA</text>
+      <text x="338" y="30" class="sans" font-size="12" font-weight="bold" fill="#FFFFFF" pointer-events="none">Fuente Única de Verdad y Sincronización</text>
+      <line x1="24" y1="48" x2="786" y2="48" stroke="#1E293B" stroke-width="1.5" pointer-events="none" />
+      <text x="28" y="70" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Árbol de Estado abstracto:</tspan> Agnóstico a la vista (no atado ni a nodos HTML ni a píxeles).</text>
+      <text x="28" y="92" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Bloques Semánticos:</tspan> Estructura AST y Grafo topológico puro de pensamiento.</text>
+      <text x="28" y="114" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Colaboración en tiempo real:</tspan> Preparado para resolución libre de conflictos (Yjs / Loro CRDTs).</text>
+    </g>
+    <!-- INSPECTOR EXPLICATIVO INFERIOR -->
+    <g transform="translate(35, 562)">
+      <rect width="1090" height="76" rx="14" fill="#080C14" stroke="#334155" stroke-width="1.5" />
+      <text id="layerTitle" x="24" y="29" class="mono" font-size="13" font-weight="bold" fill="#39FF14">SEPARACIÓN ESTRICTA DE RESPONSABILIDADES (Haz clic en una capa)</text>
+      <text id="layerDesc" x="24" y="54" class="sans" font-size="12" fill="#CBD5E1">Desacoplar los datos (Capa 1) del renderizado (Capa 2) y el DOM (Capa 3) permite cambiar de física visual sin perder ni un solo carácter.</text>
+    </g>
+  </svg>
+</div>
+<script is:inline>
+window.isLayersExpanded = false;
+window.toggleLayersExpand = function() {
+  var wrap = document.getElementById('aetherLayersWrapper');
+  var svg = document.getElementById('aetherLayersSvg');
+  var btnText = document.getElementById('btn-l-expand-text');
+  var btnRect = document.getElementById('btn-l-expand-rect');
+  if (!wrap || !svg) return;
+  window.isLayersExpanded = !window.isLayersExpanded;
+  if (window.isLayersExpanded) {
+    wrap.style.position = 'fixed';
+    wrap.style.inset = '0';
+    wrap.style.zIndex = '99999';
+    wrap.style.margin = '0';
+    wrap.style.padding = '20px';
+    wrap.style.background = 'rgba(4, 6, 12, 0.94)';
+    wrap.style.backdropFilter = 'blur(8px)';
+    wrap.style.display = 'flex';
+    wrap.style.alignItems = 'center';
+    wrap.style.justifyContent = 'center';
+    wrap.style.borderRadius = '0';
+    svg.style.width = '95vw';
+    svg.style.maxWidth = '1500px';
+    svg.style.maxHeight = '92vh';
+    svg.style.boxShadow = '0 25px 60px rgba(0, 0, 0, 0.9)';
+    svg.style.border = '1px solid #334155';
+    if (btnText) btnText.textContent = '✕ Cerrar';
+    if (btnRect) btnRect.setAttribute('stroke', '#FF007F');
+  } else {
+    wrap.style.position = 'relative';
+    wrap.style.inset = 'auto';
+    wrap.style.zIndex = 'auto';
+    wrap.style.margin = '2rem auto';
+    wrap.style.padding = '0';
+    wrap.style.background = 'transparent';
+    wrap.style.backdropFilter = 'none';
+    wrap.style.display = 'block';
+    wrap.style.borderRadius = '16px';
+    svg.style.width = '1160px';
+    svg.style.maxWidth = '100%';
+    svg.style.maxHeight = 'none';
+    svg.style.boxShadow = 'none';
+    svg.style.border = 'none';
+    if (btnText) btnText.textContent = '⛶ Ampliar';
+    if (btnRect) btnRect.setAttribute('stroke', '#94A3B8');
+  }
+};
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && window.isLayersExpanded) {
+    window.toggleLayersExpand();
+  }
+});
+window.selectLayer = function(num) {
+  var p1 = document.getElementById('poly-l1');
+  var p2 = document.getElementById('poly-l2');
+  var p3 = document.getElementById('poly-l3');
+  if (p1) { p1.setAttribute('stroke-width', '2'); p1.setAttribute('fill', '#0B0F19'); }
+  if (p2) { p2.setAttribute('stroke-width', '2'); p2.setAttribute('fill', '#0B0F19'); }
+  if (p3) { p3.setAttribute('stroke-width', '2'); p3.setAttribute('fill', '#0B0F19'); }
+  var title = document.getElementById('layerTitle');
+  var desc = document.getElementById('layerDesc');
+  if (num === 3 && p3) {
+    p3.setAttribute('stroke-width', '3.5');
+    p3.setAttribute('fill', '#190812');
+    title.textContent = '🖥️ CAPA 3 · OVERLAY DOM (Accesibilidad y Precisión Editorial)';
+    title.setAttribute('fill', '#FF66B2');
+    desc.textContent = 'El navegador gestiona la composición de texto complejo (IME), lectores de pantalla y modales sin sacrificar el rendimiento del Canvas.';
+  } else if (num === 2 && p2) {
+    p2.setAttribute('stroke-width', '3.5');
+    p2.setAttribute('fill', '#061A22');
+    title.textContent = '👁️ CAPA 2 · MOTOR GRÁFICO (Proyección Espacial a 120 FPS)';
+    title.setAttribute('fill', '#00FFFF');
+    desc.textContent = 'Traduce el grafo abstracto en geometría viva: partículas libres en Vapor, filamentos tensores en Fluido y retículas ordenadas en Cristal.';
+  } else if (num === 1 && p1) {
+    p1.setAttribute('stroke-width', '3.5');
+    p1.setAttribute('fill', '#061E11');
+    title.textContent = '🧠 CAPA 1 · MODELO DE DATOS Y CORE (Datos desacoplados)';
+    title.setAttribute('fill', '#39FF14');
+    desc.textContent = 'Pura lógica: Nodos, Puentes, Coordenadas X/Y';
+  }
+};
+window.simulateLayerFlow = function() {
+  var title = document.getElementById('layerTitle');
+  var desc = document.getElementById('layerDesc');
+  title.textContent = '⚡ CICLO COMPLETO ACTIVO: INPUT (CAPA 3) ➔ MUTACIÓN CRDT (CAPA 1) ➔ RENDER 120 FPS (CAPA 2)';
+  title.setAttribute('fill', '#FBBF24');
+  desc.textContent = '1. El Overlay DOM captura la pulsación ➔ 2. El Core CRDT actualiza el AST ➔ 3. El Motor Gráfico recalcula la física y proyecta el frame.';
+  window.selectLayer(3);
+  setTimeout(function() { window.selectLayer(1); }, 650);
+  setTimeout(function() { window.selectLayer(2); }, 1300);
+};
+</script>
