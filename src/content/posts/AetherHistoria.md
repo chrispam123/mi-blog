@@ -41,7 +41,7 @@ Las ideas empiezan a atraerse magnéticamente. Si acercas dos fragmentos con coh
 
 El texto finalmente se asienta en una tipografía editorial exquisita, con ritmo de lectura calculado, microtipografía viva y precisión sintáctica.
 
-<p align="center"><img src="../images/posts/Dinosaurioflujo.webp" alt="Descripción de la imagen" width="50%"></p>
+<p align="center"><img src="/images/posts/Dinosaurioflujo.webp" alt="Descripción de la imagen" width="50%"></p>
 <div id="aetherPhysWrapper" style="position: relative; margin: 2rem auto; border-radius: 16px; transition: all 0.25s ease;">
   <svg id="aetherPhysSvg" class="state-vapor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 520" width="1100" height="520" style="max-width: 100%; height: auto; background: #07090F; display: block; margin: 0 auto; border-radius: 16px; user-select: none;">
     <defs>
