@@ -268,7 +268,10 @@ En mi cabeza dividí el proyecto en dos planos muy claros: por un lado, la UX, c
 
 Con esa visión madura sobre la mesa, hice lo que hago siempre: parar de teorizar, bajar al barro para construir un MVP e iterar sin descanso, pero diseñando desde el primer día con la mente puesta en que la base debe escalar y comportarse como un producto funcional real: **un editor de texto que se ejecute en cualquier navegador, funcione en local y se sincronice con la nube.**
 
-### El personaje central: el lienzo y la arquitectura híbrida ###
+### El personaje central: el lienzo y la arquitectura híbrida
+
+<img src="/images/posts/lienzo.webp" width="50%" alt="fantasma" ></p>
+
 Para que Aether funcionara en la vida real, tenía que empezar diseñando al personaje central de la historia: **el lienzo donde se escribe.** Necesitaba tener músculo suficiente para responder con precisión táctil al teclear y, al mismo tiempo, contar con el motor visual capaz de sostener la transición entre los estados Vapor, Líquido y Cristal sin explotar ni romperse cuando hubiera decenas de ideas en pantalla.
 
 Investigando cómo resolver este equilibrio en el navegador, me encontré de frente con dos caminos clásicos y sus respectivas trampas:
@@ -292,6 +295,7 @@ En el instante en que haces clic sobre una nube de pensamiento o entras al estad
 **Desacoplamiento absoluto del modelo (el Core):**
 Por debajo de ambas capas visuales, el texto no se guarda como un **Hola** ni como una cadena plana. Se modela como un Grafo Semántico: nodos de pensamiento con pesos gravitatorios, nivel de densidad (Vapor, Líquido o Cristal) y marcas temporales.
 Aqui una visualización de esta Arquitectura Híbrida Desacoplada:
+
 <div id="aetherLayersWrapper" style="position: relative; margin: 2rem auto; border-radius: 16px; transition: all 0.25s ease;">
   <svg id="aetherLayersSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 660" width="1160" height="660" style="max-width: 100%; height: auto; background: #06080E; display: block; margin: 0 auto; border-radius: 16px; user-select: none;">
     <defs>
@@ -498,3 +502,474 @@ window.simulateLayerFlow = function() {
   setTimeout(function() { window.selectLayer(2); }, 1300);
 };
 </script>
+
+Con ese diagrama de tres capas ya muy claro, pude cerrar otras dos ramas fundamentales del proyecto: el **stack técnico** y la **estrategia de persistencia**.
+Decidí que Aether sería una aplicación web de una sola página (_SPA_), construida desde cero con **TypeScript y Vite** para mantener el control absoluto sin el peso innecesario de frameworks complejos. Para el renderizado y la experiencia sensorial aposté por APIs nativas del navegador: **Canvas 2D** para el lienzo infinito, elementos **DOM** quirúrgicos para la edición de texto y **Web Audio API** para generar el sonido ambiental sin depender de librerías externas.
+En cuanto a los datos, diseñé dos capas de persistencia:
+
+**Local (prioridad absoluta):** Uso **IndexedDB** directamente en el navegador para guardar las obras, los nodos, las conexiones y el estado exacto del espacio de trabajo, garantizando latencia cero y funcionamiento _offline_.
+
+**Nube (opcional a futuro):** Dejé abierta la puerta a una sincronización remota pendiente de definir, pero pensada desde el inicio para desplegarse sobre **AWS**, el ecosistema que domino.
+
+Antes de lanzarme a programar la arquitectura definitiva, apliqué mi método habitual de prueba y error: con ayuda de Codex fui levantando maquetas mínimas en HTML puro para probar sensaciones, ajustar físicas y descartar ideas rápido. Tras muchas iteraciones sobre esas maquetas, pude definir la hoja de ruta del MVP final en tres hitos concretos:
+
+**Hito 1 — El Motor Espacial Híbrido:**
+Construir el lienzo infinito en Canvas (desplazamiento suave con inercia, _zoom_ fluido con rueda o trackpad y una cuadrícula de puntos de referencia cálidos) junto con la capa de proyección matemática hacia el DOM.
+
+**Hito 2 — La Interfaz del Primer Segundo:**
+Implementar la pregunta inicial (_«¿En qué estado de la materia está tu mente hoy?»_) acompañada de tres orbes interactivos con física de respiración e interpolación suave.
+
+**Hito 3 — Los Tres Modos de Interacción:UX**
+
+**Niebla:** Clic en cualquier punto del espacio → aparece un nodo de entrada rápido, libre y flotante.
+
+**Fluido:** Detección de proximidad entre ideas y dibujo de puentes tensoriales que conectan los nodos.
+
+**Cristal:** Transición de cámara cinematográfica que hace _zoom_ y centra el pensamiento en una Frases donde predomina el inicio y otro cambio de vista mas estructurado donde predomina la idea del párrafo central.
+
+### Persistencia _Local-First_: el motor de memoria de Aether
+
+Antes de disparar la primera bala trazadora del MVP, necesitaba cerrar una última pieza crítica: el almacenamiento local. Tenía claro que Aether debía seguir una filosofía **Local-First**: guardar absolutamente todo en el disco de tu propio navegador, funcionando a latencia cero y sin depender de conexión a internet ni de servidores externos.
+
+Descarté desde el principio `localStorage` por estar limitado a unos escasos 5 MB y aceptar únicamente texto plano. En su lugar, diseñé la capa de datos sobre **IndexedDB**, una base de datos NoSQL transaccional integrada de forma nativa en los navegadores modernos que permite almacenar cientos de megabytes de forma estructurada.
+
+Definí la base de datos bajo el nombre `aether_knowledge_v1`, organizada en cuatro almacenes (_Object Stores_) en disco:
+
+<p align="center"><img src="/images/posts/Inventario.webp" alt="Descripción de la imagen" width="50%"></p>
+
+- **`documents` (Almacén de texto):** Guarda la obra redactada en la fase **Cristal**, conservando tanto el título y el HTML con formato como su versión en texto plano limpio.
+- **`thought_nodes` (Almacén de nodos e ideas):** Registra cada tarjeta flotante con sus coordenadas espaciales $(x, y)$, su fase de origen y su estado (si sigue libre en el lienzo o ya fue consumida en el texto final).
+- **`connection_bridges` (Almacén de puentes):** Almacena los vínculos entre ideas (`sourceId -> targetId`) para poder reconstruir en cualquier momento el «río» narrativo que las une.
+- **`workspace_state` (Estado global y catálogo multi-obra):** Guarda la fase activa en ese instante (**Niebla**, **Fluido** o **Cristal**), las coordenadas exactas de la cámara (paneo y _zoom_) en cada vista, el catálogo de proyectos independientes (`works_catalog` y `work_pkg_${id}`) y algo muy personal que bauticé como las virutas del **Margen de Descartes**: todo aquello que desechas mientras editas, pero que el sistema conserva a un lado para que nunca pierdas una buena idea por el camino.
+
+Para que escribir se sintiera fluido y no castigara el disco duro, establecí una regla clara de escritura: si tecleas cinco letras en medio segundo, no tiene sentido lanzar cinco operaciones de guardado. Para evitarlo, diseñé un `StorageManager` gobernado por un temporizador de **debounce de 400 milisegundos**. Cada pulsación reinicia el reloj, pero este mecanismo no solo vigila la escritura en **Cristal**; también escucha cada gesto físico sobre el lienzo en **Niebla** y **Fluido**:
+
+- Cuando creas una tarjeta nueva con doble clic o escribes dentro de ella.
+- Cuando arrastras un nodo y sueltas el ratón, notificando sus nuevas coordenadas $(x, y)$ al grafo.
+- Cuando trazas o eliminas un puente tensorial entre dos ideas.
+- Cuando borras una tarjeta, envías un fragmento al Margen de Descartes o cambias de fase.
+
+Además, decidí que cada guardado fuera **atómico**: en lugar de parchear fragmentos sueltos que pudieran desincronizarse, el sistema captura y persiste una «fotografía completa» e íntegra de toda la obra en IndexedDB.
+
+Aquí se puede ver mejor ese flujo de guardado local y el retraso de 400 ms.
+
+<div id="aetherDebounceWrapper" style="position: relative; margin: 2rem auto; border-radius: 16px; transition: all 0.25s ease;">
+  <div id="aetherDebounceCard" style="max-width: 1200px; margin: 0 auto; background: #07090F; border: 1px solid #1E293B; border-radius: 16px; padding: 24px; font-family: 'Segoe UI', system-ui, sans-serif; color: #FFFFFF; box-shadow: 0 10px 30px rgba(0,0,0,0.5); user-select: none; box-sizing: border-box;">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid #1E293B; padding-bottom: 20px;">
+      <div>
+        <h3 style="margin: 0; font-family: monospace; font-size: 18px; color: #FFFFFF; font-weight: bold;">DEBOUNCE (400 ms)</h3>
+        <p style="margin: 6px 0 0 0; font-size: 13px; color: #94A3B8;">Comprueba cómo el temporizador reinicia la cuenta a 0 ms con cada evento y solo persiste al detenerse.</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+        <button id="simBtnKey" type="button" onclick="window.debounceHandleKey()" style="background: #291D05; border: 2px solid #FBBF24; color: #FBBF24; padding: 9px 16px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s ease;">⌨️ Teclear / Mover Nodo</button>
+        <button id="simBtnBurst" type="button" onclick="window.debounceHandleBurst()" style="background: #2A0818; border: 2px solid #FF007F; color: #FF66B2; padding: 9px 16px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s ease;">⚡ Ráfaga (5 Teclas)</button>
+        <button id="simBtnExpand" type="button" onclick="window.toggleDebounceExpand()" style="background: #1E293B; border: 1.5px solid #94A3B8; color: #FFFFFF; padding: 9px 14px; border-radius: 20px; font-family: monospace; font-size: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s ease;">⛶ Ampliar</button>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; background: #0B0F19; border: 1px solid #334155; border-radius: 10px; padding: 14px 20px; font-family: monospace; font-size: 13px;">
+      <div id="simStatEvents" style="color: #FBBF24;">Eventos recibidos: 0</div>
+      <div id="simStatWrites" style="color: #39FF14;">Escrituras reales (IndexedDB): 0</div>
+      <div id="simStatSaved" style="color: #00FFFF;">Operaciones I/O ahorradas: 0</div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin: 28px 0; position: relative;">
+      <div id="simBoxEditor" style="flex: 1; min-width: 230px; background: #0B0F19; border: 2px solid #64748B; border-radius: 14px; padding: 20px; text-align: center; transition: border-color 0.2s ease;">
+        <div style="font-family: monospace; font-size: 16px; font-weight: bold;">✍️ Observadores</div>
+        <div style="color: #94A3B8; font-size: 12px; margin-top: 10px; line-height: 1.6;">• Título / Cuerpo Editor<br>• Nodos DocumentGraph<br>• Margen de Descartes</div>
+        <div id="simLastEvent" style="margin-top: 15px; font-family: monospace; font-size: 12px; color: #64748B;">En reposo...</div>
+      </div>
+      <div style="text-align: center; color: #FBBF24; font-family: monospace; font-size: 12px; min-width: 75px;">trigger()<br><span style="font-size: 20px;">➔</span></div>
+      <div id="simBoxTimer" style="flex: 1.3; min-width: 280px; background: #0B0F19; border: 2.5px solid #FBBF24; border-radius: 14px; padding: 20px; text-align: center;">
+        <div style="font-family: monospace; font-size: 16px; font-weight: bold; color: #FBBF24;">⏱️ DEBOUNCE TIMER</div>
+        <div style="color: #CBD5E1; font-size: 12px; margin-top: 4px;">Ventana de espera: 400 ms</div>
+        <div style="height: 24px; background: #1E293B; border-radius: 12px; border: 1px solid #475569; overflow: hidden; margin: 18px 0;">
+          <div id="simProgressBar" style="height: 100%; width: 0%; background: #FBBF24; border-radius: 12px; transition: width 0.08s linear;"></div>
+        </div>
+        <div id="simTimerStatus" style="font-family: monospace; font-size: 12px; font-weight: bold; color: #94A3B8;">ESTADO: INACTIVO (0 ms)</div>
+      </div>
+      <div style="text-align: center; color: #39FF14; font-family: monospace; font-size: 12px; min-width: 75px;">400ms OK<br><span style="font-size: 20px;">➔</span></div>
+      <div id="simBoxDb" style="flex: 1; min-width: 230px; background: #0B0F19; border: 2px solid #334155; border-radius: 14px; padding: 20px; text-align: center; transition: all 0.3s ease;">
+        <div style="font-family: monospace; font-size: 16px; font-weight: bold; color: #39FF14;">💾 IndexedDB</div>
+        <div style="color: #CBD5E1; font-size: 12px; margin-top: 6px;">Instantánea Única</div>
+        <div style="margin-top: 16px; background: #072615; border: 1px solid #39FF14; border-radius: 20px; padding: 8px 12px;">
+          <span id="simDbStatus" style="font-family: monospace; font-size: 11px; font-weight: bold; color: #39FF14;">ESPERANDO SEÑAL</span>
+        </div>
+      </div>
+    </div>
+    <div style="background: #0B0F19; border: 1px solid #FBBF24; border-radius: 12px; padding: 14px 18px; font-size: 13px; line-height: 1.5;">
+      <div style="font-family: monospace; font-weight: bold; color: #FBBF24; margin-bottom: 4px;">CLAVE TÉCNICA:</div>
+      <div style="color: #CBD5E1;">Si un usuario pulsa 50 caracteres seguidos, sin debounce saturarías el hilo principal con 50 accesos de escritura a disco. Con el temporizador de 400 ms, todos los cambios se unifican en 1 única operación transaccional.</div>
+    </div>
+  </div>
+</div>
+<script is:inline>
+window.debounceEvents = 0;
+window.debounceWrites = 0;
+window.debounceProgress = 0;
+window.debounceLoop = null;
+window.isDebounceExpanded = false;
+window.toggleDebounceExpand = function() {
+  var wrap = document.getElementById('aetherDebounceWrapper');
+  var card = document.getElementById('aetherDebounceCard');
+  var btn = document.getElementById('simBtnExpand');
+  if (!wrap || !card) return;
+  window.isDebounceExpanded = !window.isDebounceExpanded;
+  if (window.isDebounceExpanded) {
+    wrap.style.position = 'fixed';
+    wrap.style.inset = '0';
+    wrap.style.zIndex = '99999';
+    wrap.style.margin = '0';
+    wrap.style.padding = '20px';
+    wrap.style.background = 'rgba(4, 6, 12, 0.94)';
+    wrap.style.backdropFilter = 'blur(8px)';
+    wrap.style.display = 'flex';
+    wrap.style.alignItems = 'center';
+    wrap.style.justifyContent = 'center';
+    wrap.style.borderRadius = '0';
+    wrap.style.overflowY = 'auto';
+    card.style.width = '95vw';
+    card.style.maxWidth = '1400px';
+    card.style.boxShadow = '0 25px 60px rgba(0, 0, 0, 0.9)';
+    card.style.border = '1px solid #334155';
+    if (btn) { btn.textContent = '✕ Cerrar'; btn.style.borderColor = '#FF007F'; }
+  } else {
+    wrap.style.position = 'relative';
+    wrap.style.inset = 'auto';
+    wrap.style.zIndex = 'auto';
+    wrap.style.margin = '2rem auto';
+    wrap.style.padding = '0';
+    wrap.style.background = 'transparent';
+    wrap.style.backdropFilter = 'none';
+    wrap.style.display = 'block';
+    wrap.style.borderRadius = '16px';
+    wrap.style.overflowY = 'visible';
+    card.style.width = 'auto';
+    card.style.maxWidth = '1200px';
+    card.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+    card.style.border = '1px solid #1E293B';
+    if (btn) { btn.textContent = '⛶ Ampliar'; btn.style.borderColor = '#94A3B8'; }
+  }
+};
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && window.isDebounceExpanded) {
+    window.toggleDebounceExpand();
+  }
+});
+window.debounceUpdateMetrics = function() {
+  var elEv = document.getElementById('simStatEvents');
+  var elWr = document.getElementById('simStatWrites');
+  var elSv = document.getElementById('simStatSaved');
+  if (elEv) elEv.textContent = 'Eventos recibidos: ' + window.debounceEvents;
+  if (elWr) elWr.textContent = 'Escrituras reales (IndexedDB): ' + window.debounceWrites;
+  if (elSv) elSv.textContent = 'Operaciones I/O ahorradas: ' + Math.max(0, window.debounceEvents - window.debounceWrites);
+};
+window.debounceExecuteSave = function() {
+  window.debounceWrites++;
+  window.debounceUpdateMetrics();
+  var elEditor = document.getElementById('simBoxEditor');
+  var elDb = document.getElementById('simBoxDb');
+  var elDbStatus = document.getElementById('simDbStatus');
+  var elBar = document.getElementById('simProgressBar');
+  var elStatus = document.getElementById('simTimerStatus');
+  var elLastEvent = document.getElementById('simLastEvent');
+  if (elEditor) elEditor.style.borderColor = '#64748B';
+  if (elDb) {
+    elDb.style.borderColor = '#39FF14';
+    elDb.style.boxShadow = '0 0 20px rgba(57, 255, 20, 0.25)';
+  }
+  if (elBar) elBar.style.background = '#39FF14';
+  if (elStatus) { elStatus.textContent = '✅ 400 ms COMPLETADOS: GUARDANDO'; elStatus.style.color = '#39FF14'; }
+  if (elLastEvent) { elLastEvent.textContent = 'En reposo...'; elLastEvent.style.color = '#64748B'; }
+  if (elDbStatus) { elDbStatus.textContent = '💾 ¡ESCRITO EN DISCO!'; elDbStatus.style.color = '#39FF14'; }
+  setTimeout(function() {
+    if (elDb) elDb.style.boxShadow = 'none';
+    if (elDbStatus) elDbStatus.textContent = 'ESPERANDO SEÑAL';
+  }, 1500);
+};
+window.debounceHandleKey = function() {
+  window.debounceEvents++;
+  window.debounceUpdateMetrics();
+  var elEditor = document.getElementById('simBoxEditor');
+  var elDb = document.getElementById('simBoxDb');
+  var elDbStatus = document.getElementById('simDbStatus');
+  var elLastEvent = document.getElementById('simLastEvent');
+  var elBar = document.getElementById('simProgressBar');
+  var elStatus = document.getElementById('simTimerStatus');
+  if (elEditor) elEditor.style.borderColor = '#FBBF24';
+  if (elDb) elDb.style.borderColor = '#334155';
+  if (elDbStatus) { elDbStatus.textContent = 'RETENIDO POR COOLDOWN'; elDbStatus.style.color = '#FBBF24'; }
+  if (elLastEvent) { elLastEvent.textContent = '⚡ ¡Evento detectado! Reloj a 0 ms'; elLastEvent.style.color = '#FBBF24'; }
+  window.debounceProgress = 0;
+  if (elBar) { elBar.style.width = '0%'; elBar.style.background = '#FBBF24'; }
+  if (window.debounceLoop) clearInterval(window.debounceLoop);
+  window.debounceLoop = setInterval(function() {
+    window.debounceProgress += 5;
+    if (elBar) elBar.style.width = window.debounceProgress + '%';
+    var ms = Math.round((window.debounceProgress / 100) * 400);
+    if (elStatus) { elStatus.textContent = 'ESPERANDO PAUSA: ' + ms + ' / 400 ms'; elStatus.style.color = '#FBBF24'; }
+    if (window.debounceProgress >= 100) {
+      clearInterval(window.debounceLoop);
+      window.debounceLoop = null;
+      window.debounceExecuteSave();
+    }
+  }, 75);
+};
+window.debounceHandleBurst = function() {
+  var count = 0;
+  window.debounceHandleKey();
+  var burst = setInterval(function() {
+    count++;
+    window.debounceHandleKey();
+    if (count >= 4) clearInterval(burst);
+  }, 200);
+};
+</script>
+
+Por último, no quería que los datos quedaran atrapados dentro de la caja negra del navegador. Por eso incluí en el diseño del MVP una capa de **exportación física** en dos formatos complementarios:
+
+1. **Archivos `.aether` (`exportToAetherFile`):** Un JSON estructurado con la topología completa de la obra (texto, nodos con sus coordenadas exactas, puentes, descartes del margen y posición de cámara). Si descargas este archivo y lo vuelves a arrastrar sobre la pantalla (_Drag & Drop_), la función `parseAetherFile()` lo valida y lo reconstruye íntegro como una obra nueva en tu catálogo local.
+2. **Archivos Markdown `.md` (`exportToMarkdownFile`):** Mediante un conversor propio (`HtmlToMarkdown.ts`), transforma la estructura del documento en texto puro compatible con herramientas como Obsidian o Typora, incluyendo sus metadatos en cabecera (_YAML Frontmatter_).
+
+**Con el almacenamiento local blindado, tomé una decisión clave de ingeniería: dejar la nube fuera de esta primera versión.** Cuando construyes solo, la tentación de montar autenticación, bases de datos remotas y resolución de conflictos desde el día uno es la forma más rápida de matar un proyecto antes de que nadie lo toque. Preferí que Aether naciera rápido, privado y autónomo en el navegador, dejando la arquitectura preparada para conectar sincronización en la nube más adelante sin tener que reescribir el núcleo.
+
+### Del esqueleto técnico a la primera piel: iterando el MVP
+
+<img src="/images/posts/esqueleto.webp" width="50%" alt="fantasma" ></p>
+
+Y ahora sí, vamos con el famoso _one-shot prompt_ que supuestamente te entrega una aplicación desplegada, perfecta y lista para compartir en redes sociales en cuestión de minutos… o al menos eso dicen.
+
+En la vida real mi proceso es bastante más terrenal. Después de repasar y dejar atados los conceptos fundamentales, le pido a Codex que me muestre qué puede levantar dándole todo el contexto técnico que ya definí. Pero aplico una regla estricta: **en esta primera fase dejo fuera la filosofía de diseño**. No le doy una estética ni detalles visuales todavía. Primero necesito ver el esqueleto crudo del MVP funcionando y observar qué diseño por defecto elige Codex; de paso, detecto los detalles y fricciones reales desde el minuto uno.
+
+Para mí, vestir ese esqueleto viene después: es como ponerle la piel. Ese momento marca la transición que más disfruto, pasando de la parte de ingeniería dura —que suele ser más árida y dolorosa, pero desafiante siempre— a la etapa más creativa, donde aplico toda esa intención y sensibilidad visual que ya había investigado previamente.
+
+Aquí abajo os dejo las capturas de ese primer esqueleto que generó Codex. «Ya listo para producción», como dirían algunos en redes.
+
+<p align="center">Por defecto ha tomado algunas decisiones ambiguas pero me gusta observa e iterar estos inconvenientes.
+<p align="center"><img src="/images/posts/shot1.jpg" width="80%"  alt="Imagen del Lienzo para escribir" ></p>
+<p align="center">Aplicando el Zoom con el scroll para centrar el pensamiento.
+<p align="center"><img src="/images/posts/shot2.jpg" width="80%" alt="Aplicando el Zoom" ></p>
+
+Una vez que noté que ya tenía entre manos un MVP con potencial real —de esos que sabes que, a base de iterar, van a llegar al resultado que buscas—, hice el cambio de mentalidad hacia **director de arte**. Suelo dar este salto justo cuando veo que la base empieza a responder, aunque el prototipo todavía haga aguas por muchos sitios. Tanto ensayo y error me ha dado el olfato necesario para detectar el momento exacto en el que toca cambiar de sombrero.
+
+Con ese enfoque en la cabeza, lo primero fue definir con claridad la **UI** que buscaba para Aether. Como siempre, no salió a la primera: hicieron falta varias iteraciones hasta dar con esa emoción y ese tacto visual que tenía en mente desde los bocetos iniciales. Aquí abajo os dejo las nuevas capturas con esa primera piel ya puesta.
+
+<p align="center">Mucho mejor la UI con mi filosofia de diseño, pero aún no conseguia los colores del texto y lienzo definitivo.
+<p align="center"><img src="/images/posts/shotf.jpg" width="80%" alt="Aplicando el Zoom" ></p>
+
+<p align="center">Problemas con el zoom, mientras construyo pongo mucha atención a los detalles de la UX y pruebo muchos cambios.
+<p align="center"><img src="/images/posts/shotf1.webp" width="80%" alt="Aplicando el Zoom" ></p>
+
+### Cuando la belleza choca con la realidad: refinar la UX
+
+Una vez que la piel visual estaba en su sitio, empezó la parte más dura y dolorosa del proyecto: **refinar la UX** para que todo fluyera de verdad sin costuras. Hacer que tantos estados convivan y respondan al unísono —la física del lienzo, las transiciones entre _Niebla_, _Fluido_ y _Cristal_, la cámara, el sonido y el guardado automático— fue un ejercicio de paciencia extrema.
+
+Para evitar que la aplicación se convirtiera en un monolito imposible de depurar, diseñé el proyecto de forma **estrictamente modular**, separando cada responsabilidad en su propio dominio (`audio`, `core`, `engine`, `storage`, `ui`, `vault`...). En ese esquema, `src/main.ts` no guarda lógica de negocio: actúa únicamente como el corazón y **director de orquesta** de Aether.
+
+En arquitectura de software, este patrón se conoce como _Application Bootstrap_ o **Composition Root**: `main.ts` es el punto de ensamblaje donde cada módulo independiente se instancia, se conecta con el resto y empieza a respirar como un solo instrumento[cite: 1]. Así, cuando algo fallaba en la sensación al escribir o al mover un nodo, podía aislar el problema de inmediato en su módulo correspondiente sin romper el resto de la aplicación.
+
+<div id="aetherBootWrapper" style="position: relative; margin: 2rem auto; border-radius: 16px; transition: all 0.25s ease;">
+  <svg id="aetherBootSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="1000" height="600" style="max-width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 16px; user-select: none;">
+    <defs>
+      <linearGradient id="fuchsiaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FF007F" />
+        <stop offset="100%" stop-color="#FF66B2" />
+      </linearGradient>
+      <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="6" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="120%">
+        <feDropShadow dx="0" dy="12" stdDeviation="8" flood-color="#000000" flood-opacity="0.3" />
+      </filter>
+      <style>
+        .btn-boot { cursor: pointer; }
+        .btn-boot:hover rect { stroke-width: 2.5; filter: brightness(1.2); }
+        @keyframes drawLineInit {
+          0% { stroke-dashoffset: 20; opacity: 0; }
+          20% { opacity: 1; }
+          100% { stroke-dashoffset: 0; }
+        }
+        .init-stream {
+          stroke: #FFFFFF;
+          stroke-width: 2;
+          stroke-dasharray: 6 4;
+          fill: none;
+          animation: drawLineInit 1.5s linear infinite;
+        }
+        @keyframes wakeUpMain {
+          0%, 10% { opacity: 0.3; stroke: #555555; }
+          15% { opacity: 1; stroke: #00FFFF; }
+          100% { opacity: 1; stroke: #00FFFF; }
+        }
+        .main-block {
+          animation: wakeUpMain 6s ease-out infinite;
+        }
+        @keyframes growRadialLines {
+          0%, 22% { stroke-dashoffset: 300; opacity: 0; }
+          25% { opacity: 1; }
+          45%, 100% { stroke-dashoffset: 0; opacity: 1; }
+        }
+        @keyframes infiniteFlow {
+          0%, 45% { stroke-dasharray: 12 8; }
+          100% { stroke-dashoffset: -40; stroke-dasharray: 12 8; }
+        }
+        .data-stream {
+          stroke: #00FFFF;
+          stroke-width: 3;
+          fill: none;
+          stroke-dasharray: 300;
+          stroke-dashoffset: 300;
+          animation: growRadialLines 6s cubic-bezier(0.4, 0, 0.2, 1) infinite, infiniteFlow 1.5s linear infinite;
+          animation-delay: 0s, 2.5s;
+        }
+        @keyframes revealAndFloat {
+          0%, 40% { opacity: 0; transform: translateY(20px); }
+          48% { opacity: 1; transform: translateY(0px); }
+          50% { transform: translateY(0px); }
+          75% { transform: translateY(-6px); }
+          100% { opacity: 1; transform: translateY(0px); }
+        }
+        .floating-island {
+          opacity: 0;
+          animation: revealAndFloat 6s ease-in-out infinite;
+        }
+        .delay-island-1 { animation-delay: 0.1s; }
+        .delay-island-2 { animation-delay: 0.3s; }
+        .delay-island-3 { animation-delay: 0.5s; }
+        .delay-island-4 { animation-delay: 0.7s; }
+        .delay-island-5 { animation-delay: 0.9s; }
+        @keyframes alertBoxReveal {
+          0%, 35% { opacity: 0; }
+          45% { opacity: 0.3; }
+          70% { opacity: 1; }
+          100% { opacity: 0.3; }
+        }
+        .volatile-box {
+          stroke: #FFFFFF;
+          stroke-width: 2;
+          stroke-dasharray: 6 6;
+          fill: none;
+          animation: alertBoxReveal 6s ease-in-out infinite;
+        }
+      </style>
+    </defs>
+    <rect width="1000" height="600" rx="16" fill="url(#fuchsiaGrad)" />
+    <g class="btn-boot" transform="translate(860, 20)" onclick="window.toggleBootExpand()">
+      <rect id="btn-boot-rect" width="115" height="36" rx="18" fill="#0B0F19" stroke="#FFFFFF" stroke-width="1.5" pointer-events="all" />
+      <text id="btn-boot-text" x="57" y="23" font-family="monospace" font-size="11" font-weight="bold" fill="#FFFFFF" text-anchor="middle" pointer-events="none">⛶ Ampliar</text>
+    </g>
+    <g filter="url(#neonGlow)">
+      <path class="data-stream" d="M 320 300 L 520 130" />
+      <path class="data-stream" d="M 320 300 L 520 215" />
+      <path class="data-stream" d="M 320 300 L 520 300" />
+      <path class="data-stream" d="M 320 300 L 520 385" />
+      <path class="data-stream" d="M 320 300 L 520 470" />
+    </g>
+    <g filter="url(#dropShadow)">
+      <rect x="25" y="255" width="115" height="50" rx="12" fill="#0B0F19" />
+      <text x="82" y="285" fill="#FFFFFF" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">index.html</text>
+    </g>
+    <path class="init-stream" d="M 140 280 L 170 280" />
+    <g class="main-block" filter="url(#dropShadow)">
+      <rect x="170" y="240" width="180" height="120" rx="18" fill="#0B0F19" stroke-width="2.5" />
+      <text x="260" y="295" fill="#FFFFFF" font-family="monospace" font-size="16" font-weight="bold" text-anchor="middle">src/main.ts</text>
+      <text x="260" y="320" fill="#A0AEC0" font-family="sans-serif" font-size="11" text-anchor="middle">Orquestador</text>
+    </g>
+    <g class="floating-island delay-island-1" filter="url(#dropShadow)">
+      <rect x="500" y="100" width="280" height="60" rx="14" fill="#0B0F19" />
+      <text x="520" y="135" fill="#FFFFFF" font-family="monospace" font-size="14" font-weight="bold">🧠 DocumentGraph</text>
+      <text x="760" y="135" fill="#A0AEC0" font-family="sans-serif" font-size="11" text-anchor="end">Grafo en Memoria</text>
+    </g>
+    <g class="floating-island delay-island-2" filter="url(#dropShadow)">
+      <rect x="500" y="185" width="280" height="60" rx="14" fill="#0B0F19" />
+      <text x="520" y="220" fill="#FFFFFF" font-family="monospace" font-size="14" font-weight="bold">⚙️ StateMachine</text>
+      <text x="760" y="220" fill="#A0AEC0" font-family="sans-serif" font-size="11" text-anchor="end">Fase Activa</text>
+    </g>
+    <g class="floating-island delay-island-3" filter="url(#dropShadow)">
+      <rect x="500" y="270" width="280" height="60" rx="14" fill="#0B0F19" />
+      <text x="520" y="305" fill="#FFFFFF" font-family="monospace" font-size="14" font-weight="bold">👁️ Tríada Visual</text>
+      <text x="760" y="305" fill="#A0AEC0" font-family="sans-serif" font-size="11" text-anchor="end">Canvas / Cam / Control</text>
+    </g>
+    <g class="floating-island delay-island-4" filter="url(#dropShadow)">
+      <rect x="500" y="355" width="280" height="60" rx="14" fill="#0B0F19" />
+      <text x="520" y="390" fill="#FFFFFF" font-family="monospace" font-size="14" font-weight="bold">📝 EditorialEditor</text>
+      <text x="760" y="390" fill="#A0AEC0" font-family="sans-serif" font-size="11" text-anchor="end">Zona de Texto</text>
+    </g>
+    <g class="floating-island delay-island-5" filter="url(#dropShadow)">
+      <rect x="500" y="440" width="280" height="60" rx="14" fill="#0B0F19" />
+      <text x="520" y="475" fill="#FFFFFF" font-family="monospace" font-size="14" font-weight="bold">📦 StorageManager</text>
+      <text x="760" y="475" fill="#A0AEC0" font-family="sans-serif" font-size="11" text-anchor="end">Coordinador Local</text>
+    </g>
+    <rect class="volatile-box" x="470" y="40" width="350" height="510" rx="18" />
+    <g>
+      <rect x="575" y="28" width="140" height="24" rx="12" fill="#0B0F19" />
+      <text x="645" y="44" fill="#FFFFFF" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">MEMORIA VOLÁTIL</text>
+    </g>
+  </svg>
+</div>
+<script is:inline>
+window.isBootExpanded = false;
+window.toggleBootExpand = function() {
+  var wrap = document.getElementById('aetherBootWrapper');
+  var svg = document.getElementById('aetherBootSvg');
+  var btnText = document.getElementById('btn-boot-text');
+  var btnRect = document.getElementById('btn-boot-rect');
+  if (!wrap || !svg) return;
+  window.isBootExpanded = !window.isBootExpanded;
+  if (window.isBootExpanded) {
+    wrap.style.position = 'fixed';
+    wrap.style.inset = '0';
+    wrap.style.zIndex = '99999';
+    wrap.style.margin = '0';
+    wrap.style.padding = '20px';
+    wrap.style.background = 'rgba(4, 6, 12, 0.94)';
+    wrap.style.backdropFilter = 'blur(8px)';
+    wrap.style.display = 'flex';
+    wrap.style.alignItems = 'center';
+    wrap.style.justifyContent = 'center';
+    wrap.style.borderRadius = '0';
+    svg.style.width = '95vw';
+    svg.style.maxWidth = '1400px';
+    svg.style.maxHeight = '92vh';
+    svg.style.boxShadow = '0 25px 60px rgba(0, 0, 0, 0.9)';
+    if (btnText) btnText.textContent = '✕ Cerrar';
+    if (btnRect) btnRect.setAttribute('stroke', '#FF007F');
+  } else {
+    wrap.style.position = 'relative';
+    wrap.style.inset = 'auto';
+    wrap.style.zIndex = 'auto';
+    wrap.style.margin = '2rem auto';
+    wrap.style.padding = '0';
+    wrap.style.background = 'transparent';
+    wrap.style.backdropFilter = 'none';
+    wrap.style.display = 'block';
+    wrap.style.borderRadius = '16px';
+    svg.style.width = '1000px';
+    svg.style.maxWidth = '100%';
+    svg.style.maxHeight = 'none';
+    svg.style.boxShadow = 'none';
+    if (btnText) btnText.textContent = '⛶ Ampliar';
+    if (btnRect) btnRect.setAttribute('stroke', '#FFFFFF');
+  }
+};
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && window.isBootExpanded) {
+    window.toggleBootExpand();
+  }
+});
+</script>
+
+### El fantasma en la máquina: <p>cuando el texto se pisa a sí mismo.</p>
+
+<img src="/images/posts/fantasma.webp" width="50%" alt="fantasma" ></p>
+Uno de los golpes más duros llegó precisamente en la fase **Cristal**, donde la tipografía debería sentirse como piedra pulida. Al trabajar sobre el bloque editable del DOM, me topé de frente con la cara más caprichosa de `contenteditable`: en cuanto presionas `Enter`, borras o cortas texto rápido, el navegador empieza a inyectar su propia jerarquía por detrás, mezclando etiquetas `<p>`, `<div>` y `<span>` sin criterio.
+
+El caos visual estallaba cuando ese árbol sucio se cruzaba con las animaciones de transición. Si se disparaba la animación de fusión mineral (`fusing-pulse`) o un bloque heredaba una transformación CSS (`transform: scale(...)` o `translate`), el elemento rompía su flujo natural (_flow layout_). En lugar de empujar suavemente al párrafo siguiente hacia abajo, el bloque se desplazaba visualmente y se dibujaba justo encima del renglón vecino, solapando las letras como en una máquina de escribir atascada.
+
+Ahí comprendí que no bastaba con darle estilos bonitos al editor: tenía que domar y normalizar el comportamiento nativo del navegador para que la física del texto nunca rompiera la lectura.
+
+<p align="center"><img src="/images/posts/shotf4.jpg" width="80%" alt="Aplicando el Zoom" ></p>
+
+«Elegir una arquitectura híbrida me salvó de reimplementar la tipografía desde cero en Canvas, pero a cambio me obligó a convivir con las reglas del DOM en el bloque activo de edición. El precio de tener tildes nativas y accesibilidad sin esfuerzo fue tener que domar las mutaciones internas de `contenteditable` y asegurarme de que ninguna transformación visual (`transform`) rompiera el flujo natural de los párrafos.»
