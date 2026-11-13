@@ -218,7 +218,7 @@ window.setPhysics = function(state) {
       s.setAttribute('rx', '22'); s.setAttribute('fill', '#2A0818'); s.setAttribute('stroke', '#FF007F'); s.setAttribute('width', '160'); s.setAttribute('x', '-80');
     });
     bridges.forEach(function(b) { document.getElementById(b).setAttribute('opacity', '0'); });
-    document.getElementById('physTitle').textContent = '☁️ ESTADO VAPOR (Captura Caótica · Sin Juicios)';
+    document.getElementById('physTitle').textContent = '☁️ ESTADO Niebla (Captura Caótica · Sin Juicios)';
     document.getElementById('physTitle').setAttribute('fill', '#FF66B2');
     document.getElementById('physDesc').textContent = 'Los pensamientos orbitan en constelaciones flotantes sin tipografía estricta ni jerarquía forzada.';
   } else if (state === 'liquid') {
@@ -272,17 +272,17 @@ Con esa visión madura sobre la mesa, hice lo que hago siempre: parar de teoriza
 
 <img src="/images/posts/lienzo.webp" width="50%" alt="fantasma" ></p>
 
-Para que Aether funcionara en la vida real, tenía que empezar diseñando al personaje central de la historia: **el lienzo donde se escribe.** Necesitaba tener músculo suficiente para responder con precisión táctil al teclear y, al mismo tiempo, contar con el motor visual capaz de sostener la transición entre los estados Vapor, Líquido y Cristal sin explotar ni romperse cuando hubiera decenas de ideas en pantalla.
+Para que Aether funcionara en la vida real, tenía que empezar diseñando al personaje central de la historia: **el lienzo donde se escribe.** Necesitaba tener músculo suficiente para responder con precisión táctil al teclear y, al mismo tiempo, contar con el motor visual capaz de sostener la transición entre los estados Niebla, Fluido y Cristal sin explotar ni romperse cuando hubiera decenas de ideas en pantalla.
 
 Investigando cómo resolver este equilibrio en el navegador, me encontré de frente con dos caminos clásicos y sus respectivas trampas:
 
 **Opción A: DOM puro (contenteditable / ProseMirror / Lexical)**
 
-Todo ingeniero que ha intentado construir un editor profesional sobre contenteditable nativo termina sufriendo. Cada navegador interpreta las selecciones, los saltos de línea, los eventos input y los atajos de teclado de forma distinta e inconsistente. Además, si llevas esto a un lienzo infinito con cientos de nodos en estado Vapor, el árbol del DOM colapsa: los recálculos de layout y reflow del motor de renderizado (Blink o WebKit) hunden los FPS en cuanto haces zoom o te desplazas por el espacio.
+Todo ingeniero que ha intentado construir un editor profesional sobre contenteditable nativo termina sufriendo. Cada navegador interpreta las selecciones, los saltos de línea, los eventos input y los atajos de teclado de forma distinta e inconsistente. Además, si llevas esto a un lienzo infinito con cientos de nodos en estado Niebla, el árbol del DOM colapsa: los recálculos de layout y reflow del motor de renderizado (Blink o WebKit) hunden los FPS en cuanto haces zoom o te desplazas por el espacio.
 
 **Opción B: Canvas / WebGL puro (el camino de Figma o Google Docs)**
 
-Aquí ganas control milimétrico de cada fotograma a 120 Hz: zoom infinito, partículas de vapor, transiciones fluidas y cero problemas de reflow CSS. La trampa mortal es que te obliga a reimplementar desde cero todo el universo de la tipografía y la entrada de texto: text shaping (ligaduras y pares de kerning, lo que implica compilar HarfBuzz a WebAssembly), algoritmos de salto de línea multiidioma (como Knuth-Plass), soporte completo de IME para caracteres compuestos (desde una simple tilde á hasta teclados asiáticos 漢字) y accesibilidad, ya que un canvas es una caja negra ciega para los lectores de pantalla.
+Aquí ganas control milimétrico de cada fotograma a 120 Hz: zoom infinito, partículas de niebla, transiciones fluidas y cero problemas de reflow CSS. La trampa mortal es que te obliga a reimplementar desde cero todo el universo de la tipografía y la entrada de texto: text shaping (ligaduras y pares de kerning, lo que implica compilar HarfBuzz a WebAssembly), algoritmos de salto de línea multiidioma (como Knuth-Plass), soporte completo de IME para caracteres compuestos (desde una simple tilde á hasta teclados asiáticos 漢字) y accesibilidad, ya que un canvas es una caja negra ciega para los lectores de pantalla.
 
 La respuesta estaba en no elegir ciegamente una trinchera u otra, sino en combinar lo mejor de ambos mundos mediante una **Arquitectura Híbrida Desacoplada (Hybrid Layering),** el mismo enfoque por capas que utilizan herramientas modernas como Figma o Linear:
 
@@ -293,7 +293,7 @@ Cuando te mueves por el lienzo infinito conectando ideas, navegando por constela
 En el instante en que haces clic sobre una nube de pensamiento o entras al estado Cristal para redactar en profundidad, se proyecta un elemento nativo del DOM sincronizado al milímetro con las coordenadas del Canvas. Así obtienes tildes perfectas, atajos nativos del sistema operativo, autocorrector, dictado por voz, accesibilidad real y renderizado tipográfico subpíxel, conservando la libertad espacial del lienzo justo debajo.
 
 **Desacoplamiento absoluto del modelo (el Core):**
-Por debajo de ambas capas visuales, el texto no se guarda como un **Hola** ni como una cadena plana. Se modela como un Grafo Semántico: nodos de pensamiento con pesos gravitatorios, nivel de densidad (Vapor, Líquido o Cristal) y marcas temporales.
+Por debajo de ambas capas visuales, el texto no se guarda como un **Hola** ni como una cadena plana. Se modela como un Grafo Semántico: nodos de pensamiento con pesos gravitatorios, nivel de densidad (Niebla, Fluido o Cristal) y marcas temporales.
 Aqui una visualización de esta Arquitectura Híbrida Desacoplada:
 
 <div id="aetherLayersWrapper" style="position: relative; margin: 2rem auto; border-radius: 16px; transition: all 0.25s ease;">
@@ -383,7 +383,7 @@ Aqui una visualización de esta Arquitectura Híbrida Desacoplada:
       <text x="328" y="30" class="sans" font-size="12" font-weight="bold" fill="#FFFFFF" pointer-events="none">Renderizado Espacial y Física a 120 FPS</text>
       <line x1="24" y1="48" x2="786" y2="48" stroke="#1E293B" stroke-width="1.5" pointer-events="none" />
       <text x="28" y="70" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Lienzo infinito a 120 FPS:</tspan> Gestión fluida de Pan, Zoom y proyección de cámara 2D/3D.</text>
-      <text x="28" y="92" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Materia dinámica:</tspan> Renderiza partículas en estado Vapor y filamentos tensores en estado Fluido.</text>
+      <text x="28" y="92" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Materia dinámica:</tspan> Renderiza partículas en estado Niebla y filamentos tensores en estado Fluido.</text>
       <text x="28" y="114" class="sans" font-size="12" fill="#CBD5E1" pointer-events="none">• <tspan font-weight="bold" fill="#FFFFFF">Física cognitiva:</tspan> Transformaciones matriciales espaciales y fuerzas magnéticas de atracción.</text>
     </g>
     <!-- CONECTOR VERTICAL 2 <-> 1 -->
@@ -482,7 +482,7 @@ window.selectLayer = function(num) {
     p2.setAttribute('fill', '#061A22');
     title.textContent = '👁️ CAPA 2 · MOTOR GRÁFICO (Proyección Espacial a 120 FPS)';
     title.setAttribute('fill', '#00FFFF');
-    desc.textContent = 'Traduce el grafo abstracto en geometría viva: partículas libres en Vapor, filamentos tensores en Fluido y retículas ordenadas en Cristal.';
+    desc.textContent = 'Traduce el grafo abstracto en geometría viva: partículas libres en Niebla, filamentos tensores en Fluido y retículas ordenadas en Cristal.';
   } else if (num === 1 && p1) {
     p1.setAttribute('stroke-width', '3.5');
     p1.setAttribute('fill', '#061E11');
@@ -509,7 +509,7 @@ En cuanto a los datos, diseñé dos capas de persistencia:
 
 **Local (prioridad absoluta):** Uso **IndexedDB** directamente en el navegador para guardar las obras, los nodos, las conexiones y el estado exacto del espacio de trabajo, garantizando latencia cero y funcionamiento _offline_.
 
-**Nube (opcional a futuro):** Dejé abierta la puerta a una sincronización remota pendiente de definir, pero pensada desde el inicio para desplegarse sobre **AWS**, el ecosistema que domino.
+**Nube (opcional a futuro):** Dejé abierta la puerta a una sincronización remota pendiente de definir, pero pensada desde el inicio para desplegarse sobre **AWS**, el ecosistema que uso frecuentemente para despliegues en la nube y siempre optimizando al máximo los costes.
 
 Antes de lanzarme a programar la arquitectura definitiva, apliqué mi método habitual de prueba y error: con ayuda de Codex fui levantando maquetas mínimas en HTML puro para probar sensaciones, ajustar físicas y descartar ideas rápido. Tras muchas iteraciones sobre esas maquetas, pude definir la hoja de ruta del MVP final en tres hitos concretos:
 
@@ -525,7 +525,7 @@ Implementar la pregunta inicial (_«¿En qué estado de la materia está tu ment
 
 **Fluido:** Detección de proximidad entre ideas y dibujo de puentes tensoriales que conectan los nodos.
 
-**Cristal:** Transición de cámara cinematográfica que hace _zoom_ y centra el pensamiento en una Frases donde predomina el inicio y otro cambio de vista mas estructurado donde predomina la idea del párrafo central.
+**Cristal:** Transición de cámara cinematográfica que hace _zoom_ y centra el pensamiento en unas Frases donde predomina el inicio y otro cambio de vista mas estructurado donde predomina la idea del párrafo central.
 
 ### Persistencia _Local-First_: el motor de memoria de Aether
 
@@ -737,7 +737,7 @@ Por último, no quería que los datos quedaran atrapados dentro de la caja negra
 
 Y ahora sí, vamos con el famoso _one-shot prompt_ que supuestamente te entrega una aplicación desplegada, perfecta y lista para compartir en redes sociales en cuestión de minutos… o al menos eso dicen.
 
-En la vida real mi proceso es bastante más terrenal. Después de repasar y dejar atados los conceptos fundamentales, le pido a Codex que me muestre qué puede levantar dándole todo el contexto técnico que ya definí. Pero aplico una regla estricta: **en esta primera fase dejo fuera la filosofía de diseño**. No le doy una estética ni detalles visuales todavía. Primero necesito ver el esqueleto crudo del MVP funcionando y observar qué diseño por defecto elige Codex; de paso, detecto los detalles y fricciones reales desde el minuto uno.
+En la vida real mi proceso es bastante más terrenal. Después de repasar y dejar atados los conceptos fundamentales, le pido a Codex que me muestre qué puede levantar dándole todo el contexto técnico que ya definí. Pero aplico una regla estricta: **en esta primera fase dejo fuera la filosofía de diseño**. No le doy una estética ni detalles visuales todavía. Primero necesito ver el esqueleto crudo del MVP funcionando y observar que diseño por defecto elige Codex; de paso, detecto los detalles y fricciones reales desde el minuto uno.
 
 Para mí, vestir ese esqueleto viene después: es como ponerle la piel. Ese momento marca la transición que más disfruto, pasando de la parte de ingeniería dura —que suele ser más árida y dolorosa, pero desafiante siempre— a la etapa más creativa, donde aplico toda esa intención y sensibilidad visual que ya había investigado previamente.
 
@@ -764,7 +764,9 @@ Una vez que la piel visual estaba en su sitio, empezó la parte más dura y dolo
 
 Para evitar que la aplicación se convirtiera en un monolito imposible de depurar, diseñé el proyecto de forma **estrictamente modular**, separando cada responsabilidad en su propio dominio (`audio`, `core`, `engine`, `storage`, `ui`, `vault`...). En ese esquema, `src/main.ts` no guarda lógica de negocio: actúa únicamente como el corazón y **director de orquesta** de Aether.
 
-En arquitectura de software, este patrón se conoce como _Application Bootstrap_ o **Composition Root**: `main.ts` es el punto de ensamblaje donde cada módulo independiente se instancia, se conecta con el resto y empieza a respirar como un solo instrumento[cite: 1]. Así, cuando algo fallaba en la sensación al escribir o al mover un nodo, podía aislar el problema de inmediato en su módulo correspondiente sin romper el resto de la aplicación.
+<p align="center"><img src="/images/posts/modulos.jpg" width="30%" alt="Aplicando el Zoom" ></p>
+
+En arquitectura de software, este patrón se conoce como _Application Bootstrap_ o **Composition Root**: `main.ts` es el punto de ensamblaje donde cada módulo independiente se instancia, se conecta con el resto y empieza a respirar como un solo instrumento. Así, cuando algo fallaba en la sensación al escribir o al mover un nodo, podía aislar el problema de inmediato en su módulo correspondiente sin romper el resto de la aplicación.
 
 <div id="aetherBootWrapper" style="position: relative; margin: 2rem auto; border-radius: 16px; transition: all 0.25s ease;">
   <svg id="aetherBootSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="1000" height="600" style="max-width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 16px; user-select: none;">
@@ -968,7 +970,7 @@ Uno de los golpes más duros llegó precisamente en la fase **Cristal**, donde l
 
 El caos visual estallaba cuando ese árbol sucio se cruzaba con las animaciones de transición. Si se disparaba la animación de fusión mineral (`fusing-pulse`) o un bloque heredaba una transformación CSS (`transform: scale(...)` o `translate`), el elemento rompía su flujo natural (_flow layout_). En lugar de empujar suavemente al párrafo siguiente hacia abajo, el bloque se desplazaba visualmente y se dibujaba justo encima del renglón vecino, solapando las letras como en una máquina de escribir atascada.
 
-Ahí comprendí que no bastaba con darle estilos bonitos al editor: tenía que domar y normalizar el comportamiento nativo del navegador para que la física del texto nunca rompiera la lectura.
+Ahí comprendí que no bastaba con darle estilos bonitos al editor: tenía que domar y normalizar el comportamiento nativo del navegador para que la física del texto nunca rompiera la lectura. En desarrollo frontend este error se conoce como Colisión de Capas del DOM o Ruptura del Flujo de Bloque en contenteditable.
 
 <p align="center"><img src="/images/posts/shotf4.jpg" width="80%" alt="Aplicando el Zoom" ></p>
 
