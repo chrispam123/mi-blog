@@ -1697,7 +1697,259 @@ El resultado era un **«registro fantasma»** o metadatos huérfanos. Al abrir A
 
 Fue otra iteración necesaria para invertir la lógica y endurecer el flujo hacia un modelo verdaderamente consistente: nunca confirmar en el catálogo lo que aún no existe físicamente en el almacenamiento de objetos (o reaccionar mediante eventos reales de S3). A veces, la diferencia entre un prototipo que funciona en tu escritorio y un producto sólido vive justo en esos milisegundos en los que se cierra una tapa o se pierde la señal.
 
-Nueva arquitectura falta pegar
+#### La solución: invertir el orden con un _Two-Phase Commit_ en cliente
+
+Para erradicar para siempre esos registros fantasma, rediseñé el protocolo de sincronización aplicando una regla inquebrantable: **jamás registrar en el catálogo lo que aún no existe físicamente en el almacenamiento de objetos**.
+
+Al evaluar cómo resolverlo sobre AWS, tenía dos caminos claros sobre la mesa:
+
+- **Patrón A — _Two-Phase Commit_ en cliente (`Init -> Upload -> Commit`):** Un flujo síncrono y directo donde el propio navegador coordina la subida física a S3 y solo confirma el registro en DynamoDB cuando recibe la certeza de que el archivo ya está guardado.
+
+<div id="aetherVaultSyncWrapper" style="position: relative; margin: 2rem auto; border-radius: 16px; transition: all 0.25s ease;">
+  <svg id="aetherVaultSyncSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 920" width="1320" height="920" style="max-width: 100%; height: auto; background: #06080E; display: block; margin: 0 auto; border-radius: 16px; user-select: none;">
+    <defs>
+      <radialGradient id="bgVaultSync" cx="50%" cy="30%" r="80%">
+        <stop offset="0%" stop-color="#112233" />
+        <stop offset="100%" stop-color="#06080E" />
+      </radialGradient>
+      <filter id="shadowVs" x="-10%" y="-10%" width="120%" height="120%">
+        <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.6" />
+      </filter>
+      <marker id="arrC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1 L 10 5 L 0 9 z" fill="#00FFFF" />
+      </marker>
+      <marker id="arrG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1 L 10 5 L 0 9 z" fill="#39FF14" />
+      </marker>
+      <marker id="arrA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 1 L 10 5 L 0 9 z" fill="#FBBF24" />
+      </marker>
+      <style>
+        .mono { font-family: 'Fira Code', 'Consolas', monospace; }
+        .sans { font-family: 'Inter', 'Segoe UI', sans-serif; }
+        .lifeline { stroke: #252E47; stroke-width: 2; stroke-dasharray: 6 6; }
+        @keyframes march { to { stroke-dashoffset: -24; } }
+        .stream { stroke-dasharray: 8 4; animation: march 1s linear infinite; }
+        .btn-vs { cursor: pointer; }
+        .btn-vs:hover rect { stroke-width: 2.5; filter: brightness(1.2); }
+      </style>
+    </defs>
+    <rect width="1320" height="920" rx="16" fill="url(#bgVaultSync)" />
+    <!-- HUD SUPERIOR -->
+    <g transform="translate(40, 20)">
+      <text x="0" y="22" class="mono" font-size="17" font-weight="bold" fill="#FFFFFF">🛡️ VAULT SYNC FLOW: UPLOAD-FIRST &amp; COMMIT-LAST</text>
+      <text x="0" y="42" class="sans" font-size="12" fill="#94A3B8">DynamoDB solo registra la obra tras confirmar mediante HTTP 200 OK que los bytes existen en S3</text>
+      <g class="btn-vs" transform="translate(615, 6)" onclick="window.simulateVsSuccess()">
+        <rect width="230" height="38" rx="19" fill="#072E18" stroke="#39FF14" stroke-width="2" pointer-events="all" />
+        <text x="115" y="24" class="mono" font-size="11" font-weight="bold" fill="#39FF14" text-anchor="middle" pointer-events="none">✅ Simular Sync Completo</text>
+      </g>
+      <g class="btn-vs" transform="translate(860, 6)" onclick="window.simulateVsAbort()">
+        <rect width="255" height="38" rx="19" fill="#2A0818" stroke="#FF007F" stroke-width="2" pointer-events="all" />
+        <text x="127" y="24" class="mono" font-size="11" font-weight="bold" fill="#FF66B2" text-anchor="middle" pointer-events="none">💥 Simular Corte en S3</text>
+      </g>
+      <g class="btn-vs" transform="translate(1130, 6)" onclick="window.toggleVsExpand()">
+        <rect id="btn-vs-expand-rect" width="110" height="38" rx="19" fill="#1E293B" stroke="#94A3B8" stroke-width="1.5" pointer-events="all" />
+        <text id="btn-vs-expand-text" x="55" y="24" class="mono" font-size="11" font-weight="bold" fill="#FFFFFF" text-anchor="middle" pointer-events="none">⛶ Ampliar</text>
+      </g>
+    </g>
+    <!-- LÍNEAS DE VIDA -->
+    <g>
+      <line class="lifeline" x1="160" y1="150" x2="160" y2="755" />
+      <line class="lifeline" x1="500" y1="150" x2="500" y2="755" />
+      <line class="lifeline" x1="840" y1="150" x2="840" y2="755" />
+      <line class="lifeline" x1="1160" y1="150" x2="1160" y2="755" />
+    </g>
+    <!-- PARTICIPANTES (BLOQUES REDONDEADOS) -->
+    <g filter="url(#shadowVs)">
+      <g transform="translate(60, 82)">
+        <rect width="200" height="68" rx="14" fill="#0B0F19" stroke="#00FFFF" stroke-width="2" />
+        <text x="100" y="30" class="mono" font-size="14" font-weight="bold" fill="#00FFFF" text-anchor="middle">🌐 Navegador</text>
+        <text x="100" y="50" class="sans" font-size="11" fill="#94A3B8" text-anchor="middle">Cliente Local (IndexedDB)</text>
+      </g>
+      <g transform="translate(400, 82)">
+        <rect width="200" height="68" rx="14" fill="#0B0F19" stroke="#39FF14" stroke-width="2" />
+        <text x="100" y="30" class="mono" font-size="14" font-weight="bold" fill="#39FF14" text-anchor="middle">λ Lambda</text>
+        <text x="100" y="50" class="sans" font-size="11" fill="#94A3B8" text-anchor="middle">Orquestador API</text>
+      </g>
+      <g transform="translate(740, 82)">
+        <rect width="200" height="68" rx="14" fill="#0B0F19" stroke="#FBBF24" stroke-width="2" />
+        <text x="100" y="30" class="mono" font-size="14" font-weight="bold" fill="#FBBF24" text-anchor="middle">⚡ DynamoDB</text>
+        <text x="100" y="50" class="sans" font-size="11" fill="#94A3B8" text-anchor="middle">Índice / Catálogo</text>
+      </g>
+      <g transform="translate(1060, 82)">
+        <rect width="200" height="68" rx="14" fill="#0B0F19" stroke="#00FFFF" stroke-width="2" />
+        <text x="100" y="30" class="mono" font-size="14" font-weight="bold" fill="#FFFFFF" text-anchor="middle">🪣 S3</text>
+        <text x="100" y="50" class="sans" font-size="11" fill="#94A3B8" text-anchor="middle">Bóveda .aether</text>
+      </g>
+    </g>
+    <!-- FASE (1): POST /vault/sync/init -->
+    <rect x="40" y="172" width="1240" height="150" rx="16" fill="#00FFFF" fill-opacity="0.04" stroke="#00FFFF" stroke-width="1.5" stroke-dasharray="8 4" />
+    <rect x="60" y="160" width="385" height="22" rx="11" fill="#008B8B" stroke="#00FFFF" stroke-width="1" />
+    <text x="252" y="175" class="sans" font-size="11" font-weight="bold" fill="#FFFFFF" text-anchor="middle">FASE (1) · GENERACIÓN DE FIRMA (SIN TOCAR ÍNDICE)</text>
+    <g>
+      <circle cx="160" cy="212" r="12" fill="#00FFFF" />
+      <text x="160" y="216" class="mono" font-size="11" font-weight="bold" fill="#0B0F19" text-anchor="middle">1</text>
+      <line class="stream" x1="172" y1="212" x2="490" y2="212" stroke="#00FFFF" stroke-width="2.5" marker-end="url(#arrC)" />
+      <text x="330" y="202" class="mono" font-size="12" font-weight="bold" fill="#00FFFF" text-anchor="middle">POST /vault/sync/init</text>
+      <rect x="520" y="195" width="235" height="34" rx="10" fill="#062833" stroke="#00FFFF" stroke-width="1" />
+      <text x="637" y="216" class="mono" font-size="11" fill="#00FFFF" text-anchor="middle">Solo genera Presigned</text>
+    </g>
+    <g>
+      <line class="stream" x1="500" y1="282" x2="170" y2="282" stroke="#39FF14" stroke-width="2.5" marker-end="url(#arrG)" />
+      <rect x="235" y="258" width="190" height="22" rx="11" fill="#072E18" stroke="#39FF14" stroke-width="1" />
+      <text x="330" y="273" class="mono" font-size="11" font-weight="bold" fill="#39FF14" text-anchor="middle">🔑 Presigned PUT URL</text>
+      <rect x="520" y="264" width="235" height="34" rx="10" fill="#1E293B" stroke="#64748B" stroke-width="1" />
+      <text x="637" y="285" class="mono" font-size="11" fill="#94A3B8" text-anchor="middle">NO toca DynamoDB aún</text>
+    </g>
+    <!-- FASE (2): PUT archivo.aether -> S3 -->
+    <rect x="40" y="345" width="1240" height="175" rx="16" fill="#39FF14" fill-opacity="0.04" stroke="#39FF14" stroke-width="1.5" stroke-dasharray="8 4" />
+    <rect x="60" y="333" width="380" height="22" rx="11" fill="#00A86B" stroke="#39FF14" stroke-width="1" />
+    <text x="250" y="348" class="sans" font-size="11" font-weight="bold" fill="#FFFFFF" text-anchor="middle">FASE (2) · TRANSFERENCIA Y VERIFICACIÓN EN S3</text>
+    <g>
+      <circle cx="160" cy="392" r="12" fill="#39FF14" />
+      <text x="160" y="396" class="mono" font-size="11" font-weight="bold" fill="#0B0F19" text-anchor="middle">2</text>
+      <line id="vsPutFull" class="stream" x1="172" y1="392" x2="1150" y2="392" stroke="#39FF14" stroke-width="3" marker-end="url(#arrG)" />
+      <line id="vsPutBroken" class="stream" x1="172" y1="392" x2="640" y2="392" stroke="#FF007F" stroke-width="3.5" opacity="0" />
+      <text id="vsPutLabel" x="660" y="380" class="mono" font-size="12" font-weight="bold" fill="#FFFFFF" text-anchor="middle">PUT archivo.aether</text>
+      <g id="vsS3Return">
+        <line class="stream" x1="1160" y1="468" x2="170" y2="468" stroke="#00FFFF" stroke-width="2.5" marker-end="url(#arrC)" />
+        <rect x="410" y="445" width="500" height="24" rx="12" fill="#062833" stroke="#00FFFF" stroke-width="1" />
+        <text x="660" y="461" class="mono" font-size="11" font-weight="bold" fill="#00FFFF" text-anchor="middle">HTTP 200 OK de S3 (Prueba irrefutable de que los bytes existen)</text>
+      </g>
+      <g id="vsCrashBox" transform="translate(645, 370)" opacity="0">
+        <rect width="290" height="54" rx="12" fill="#2A0818" stroke="#FF007F" stroke-width="2" />
+        <text x="145" y="22" class="mono" font-size="12" font-weight="bold" fill="#FF66B2" text-anchor="middle">💥 CORTE DE RED EN S3</text>
+        <text x="145" y="40" class="sans" font-size="11" fill="#CBD5E1" text-anchor="middle">Abortado: No se ejecuta Fase (3)</text>
+      </g>
+    </g>
+    <!-- FASE (3): POST /vault/sync/complete -> DynamoDB -->
+    <rect x="40" y="542" width="1240" height="200" rx="16" fill="#FBBF24" fill-opacity="0.05" stroke="#FBBF24" stroke-width="1.5" stroke-dasharray="8 4" />
+    <rect x="60" y="530" width="380" height="22" rx="11" fill="#B45309" stroke="#FBBF24" stroke-width="1" />
+    <text x="250" y="545" class="sans" font-size="11" font-weight="bold" fill="#FFFFFF" text-anchor="middle">FASE (3) · CONFIRMACIÓN Y COMMIT EN DYNAMODB</text>
+    <g id="vsPhase3Content">
+      <circle cx="160" cy="588" r="12" fill="#FBBF24" />
+      <text x="160" y="592" class="mono" font-size="11" font-weight="bold" fill="#0B0F19" text-anchor="middle">3</text>
+      <line class="stream" x1="172" y1="588" x2="490" y2="588" stroke="#FBBF24" stroke-width="2.5" marker-end="url(#arrA)" />
+      <text x="330" y="578" class="mono" font-size="12" font-weight="bold" fill="#FBBF24" text-anchor="middle">POST /vault/sync/complete</text>
+      <line class="stream" x1="500" y1="635" x2="830" y2="635" stroke="#FBBF24" stroke-width="2.5" marker-end="url(#arrA)" />
+      <text x="665" y="624" class="mono" font-size="12" font-weight="bold" fill="#FBBF24" text-anchor="middle">Ahora sí: Guarda en DynamoDB</text>
+      <g transform="translate(860, 614)">
+        <rect width="225" height="42" rx="10" fill="#291D05" stroke="#FBBF24" stroke-width="1.5" />
+        <text x="112" y="18" class="mono" font-size="11" font-weight="bold" fill="#FBBF24" text-anchor="middle">🔒 100 % Garantizado</text>
+        <text x="112" y="33" class="sans" font-size="10" fill="#CBD5E1" text-anchor="middle">Blob verificado previamente</text>
+      </g>
+      <line class="stream" x1="500" y1="702" x2="170" y2="702" stroke="#39FF14" stroke-width="2.5" marker-end="url(#arrG)" />
+      <rect x="230" y="678" width="200" height="22" rx="11" fill="#072E18" stroke="#39FF14" stroke-width="1" />
+      <text x="330" y="693" class="mono" font-size="11" font-weight="bold" fill="#39FF14" text-anchor="middle">✅ 200 Sincronizado</text>
+    </g>
+    <g id="vsPhase3Blocked" transform="translate(380, 615)" opacity="0">
+      <rect width="560" height="58" rx="12" fill="#0B0F19" stroke="#FF007F" stroke-width="2" />
+      <text x="280" y="24" class="mono" font-size="12" font-weight="bold" fill="#FF66B2" text-anchor="middle">🛡️ DYNAMODB INTACTO (CERO REGISTROS HUÉRFANOS)</text>
+      <text x="280" y="44" class="sans" font-size="11" fill="#CBD5E1" text-anchor="middle">Al no recibir HTTP 200 de S3, el cliente nunca llama a /vault/sync/complete.</text>
+    </g>
+    <!-- PANEL DIAGNÓSTICO INFERIOR -->
+    <g transform="translate(40, 775)">
+      <rect width="1240" height="120" rx="14" fill="#080C14" stroke="#334155" stroke-width="1.5" />
+      <text id="vsTitle" x="24" y="28" class="mono" font-size="13" font-weight="bold" fill="#39FF14">🛡️ FLUJO NORMAL: CONSISTENCIA GARANTIZADA EN LA BÓVEDA</text>
+      <text id="vsLine1" x="24" y="53" class="sans" font-size="12" fill="#CBD5E1">1. En POST /vault/sync/init Lambda solo firma la URL temporal; DynamoDB permanece intacto.</text>
+      <text id="vsLine2" x="24" y="75" class="sans" font-size="12" fill="#CBD5E1">2. El navegador sube el archivo directamente a S3 y espera el HTTP 200 OK como prueba irrefutable de que los bytes existen.</text>
+      <text id="vsLine3" x="24" y="99" class="mono" font-size="11" fill="#00FFFF">3. Solo tras confirmar S3, POST /vault/sync/complete guarda el índice en DynamoDB de forma 100 % garantizada.</text>
+    </g>
+  </svg>
+</div>
+<script is:inline>
+window.isVsExpanded = false;
+window.toggleVsExpand = function() {
+  var wrap = document.getElementById('aetherVaultSyncWrapper');
+  var svg = document.getElementById('aetherVaultSyncSvg');
+  var btnText = document.getElementById('btn-vs-expand-text');
+  var btnRect = document.getElementById('btn-vs-expand-rect');
+  if (!wrap || !svg) return;
+  window.isVsExpanded = !window.isVsExpanded;
+  if (window.isVsExpanded) {
+    wrap.style.position = 'fixed';
+    wrap.style.inset = '0';
+    wrap.style.zIndex = '99999';
+    wrap.style.margin = '0';
+    wrap.style.padding = '20px';
+    wrap.style.background = 'rgba(4, 6, 12, 0.94)';
+    wrap.style.backdropFilter = 'blur(8px)';
+    wrap.style.display = 'flex';
+    wrap.style.alignItems = 'center';
+    wrap.style.justifyContent = 'center';
+    wrap.style.borderRadius = '0';
+    svg.style.width = '95vw';
+    svg.style.maxWidth = '1550px';
+    svg.style.maxHeight = '92vh';
+    svg.style.boxShadow = '0 25px 60px rgba(0, 0, 0, 0.9)';
+    svg.style.border = '1px solid #334155';
+    if (btnText) btnText.textContent = '✕ Cerrar';
+    if (btnRect) btnRect.setAttribute('stroke', '#FF007F');
+  } else {
+    wrap.style.position = 'relative';
+    wrap.style.inset = 'auto';
+    wrap.style.zIndex = 'auto';
+    wrap.style.margin = '2rem auto';
+    wrap.style.padding = '0';
+    wrap.style.background = 'transparent';
+    wrap.style.backdropFilter = 'none';
+    wrap.style.display = 'block';
+    wrap.style.borderRadius = '16px';
+    svg.style.width = '1320px';
+    svg.style.maxWidth = '100%';
+    svg.style.maxHeight = 'none';
+    svg.style.boxShadow = 'none';
+    svg.style.border = 'none';
+    if (btnText) btnText.textContent = '⛶ Ampliar';
+    if (btnRect) btnRect.setAttribute('stroke', '#94A3B8');
+  }
+};
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && window.isVsExpanded) {
+    window.toggleVsExpand();
+  }
+});
+window.simulateVsAbort = function() {
+  document.getElementById('vsPutFull').setAttribute('opacity', '0');
+  document.getElementById('vsPutBroken').setAttribute('opacity', '1');
+  document.getElementById('vsS3Return').setAttribute('opacity', '0');
+  document.getElementById('vsCrashBox').setAttribute('opacity', '1');
+  var lbl = document.getElementById('vsPutLabel');
+  lbl.setAttribute('x', '405');
+  lbl.textContent = 'PUT archivo.aether ──X (Fallo de red)';
+  lbl.setAttribute('fill', '#FF66B2');
+  document.getElementById('vsPhase3Content').setAttribute('opacity', '0.15');
+  document.getElementById('vsPhase3Blocked').setAttribute('opacity', '1');
+  var title = document.getElementById('vsTitle');
+  title.textContent = '💥 CORTE DE RED EN S3: CONSISTENCIA PRESERVADA (CERO REGISTROS ROTOS)';
+  title.setAttribute('fill', '#FF66B2');
+  document.getElementById('vsLine1').textContent = '1. La subida directa a S3 se interrumpe y el navegador jamás recibe el código HTTP 200 OK.';
+  document.getElementById('vsLine2').textContent = '2. Como el commit en DynamoDB estaba pospuesto a POST /vault/sync/complete, el catálogo no se contamina con enlaces 404.';
+  document.getElementById('vsLine3').textContent = 'Resultado: DynamoDB permanece limpio y el reintento local en IndexedDB es completamente seguro.';
+};
+window.simulateVsSuccess = function() {
+  document.getElementById('vsPutFull').setAttribute('opacity', '1');
+  document.getElementById('vsPutBroken').setAttribute('opacity', '0');
+  document.getElementById('vsS3Return').setAttribute('opacity', '1');
+  document.getElementById('vsCrashBox').setAttribute('opacity', '0');
+  var lbl = document.getElementById('vsPutLabel');
+  lbl.setAttribute('x', '660');
+  lbl.textContent = 'PUT archivo.aether';
+  lbl.setAttribute('fill', '#FFFFFF');
+  document.getElementById('vsPhase3Content').setAttribute('opacity', '1');
+  document.getElementById('vsPhase3Blocked').setAttribute('opacity', '0');
+  var title = document.getElementById('vsTitle');
+  title.textContent = '🛡️ FLUJO NORMAL: CONSISTENCIA GARANTIZADA EN LA BÓVEDA';
+  title.setAttribute('fill', '#39FF14');
+  document.getElementById('vsLine1').textContent = '1. En POST /vault/sync/init Lambda solo firma la URL temporal; DynamoDB permanece intacto.';
+  document.getElementById('vsLine2').textContent = '2. El navegador sube el archivo directamente a S3 y espera el HTTP 200 OK como prueba irrefutable de que los bytes existen.';
+  document.getElementById('vsLine3').textContent = '3. Solo tras confirmar S3, POST /vault/sync/complete guarda el índice en DynamoDB de forma 100 % garantizada.';
+};
+</script>
+
+- **Patrón B — El patrón dorado _Serverless_ (_Event-Driven S3 Notification_):** Un enfoque totalmente asíncrono donde el cliente incrusta los metadatos en las cabeceras de S3 (`x-amz-meta-checksum`) y el propio evento interno `s3:ObjectCreated:Put` despierta una Lambda en segundo plano para actualizar DynamoDB sin depender del navegador.
+
+Para esta etapa del producto elegí el **Patrón A** por pragmatismo y simplicidad operativa: asumo el pequeño coste de una llamada HTTP adicional a cambio de tener control inmediato, determinista y fácil de depurar sin montar todavía infraestructura de eventos e IAM entre servicios. El **Patrón B** queda anotado en la hoja de ruta como la evolución natural y recomendada en cuanto Aether escale.
 
 ### Volver al margen: lo que queda cuando se apaga el ruido técnico
 
