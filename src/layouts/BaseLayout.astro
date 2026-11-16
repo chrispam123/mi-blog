@@ -10,6 +10,7 @@ interface Props {
 
 const { title, description = 'Autopoiesis — codigo y pensamientos' } =
   Astro.props
+const isHome = Astro.url.pathname === '/'
 ---
 
 <!doctype html>
@@ -46,21 +47,59 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
 
   <body>
     <div class="side-art side-art-left" aria-hidden="true">
-      <img src="/images/layout/caras11-transparent.png" alt="" />
+      <div class="side-art-track">
+        <img src="/images/layout/caras11-transparent.png" alt="" />
+        <img src="/images/layout/caras11-transparent.png" alt="" />
+      </div>
     </div>
     <div class="side-art side-art-right" aria-hidden="true">
-      <img src="/images/layout/caras11-transparent.png" alt="" />
+      <div class="side-art-track">
+        <img src="/images/layout/caras11-transparent.png" alt="" />
+        <img src="/images/layout/caras11-transparent.png" alt="" />
+      </div>
     </div>
     <div class="site-wrapper">
-      <header class="site-header">
-        <img
-          src="/brand/favicon.svg"
-          alt=""
-          class="site-mark"
-          aria-hidden="true"
-        />
-        <a href="/" class="site-title">Autopoiesis</a>
-        <span class="site-tagline">notas y pensamientos</span>
+      <header
+        class={isHome ? 'site-header' : 'site-header site-header-compact'}
+      >
+        {
+          isHome ? (
+            <>
+              <img
+                src="/brand/favicon.svg"
+                alt=""
+                class="site-mark"
+                aria-hidden="true"
+              />
+              <a href="/" class="site-title">
+                Autopoiesis
+              </a>
+              <h3 class="site-intro-title">
+                Sistemas complejos, superficies silenciosas.
+              </h3>
+              <p class="site-intro-copy">
+                Notas de ingeniería, arquitectura cloud y ensayos visuales sobre
+                cómo diseño y despliego software en el mundo real: con
+                decisiones propias, margen para el error y cero dogmas. La IA
+                acelera la ejecución; el criterio, las palabras y la
+                arquitectura siguen siendo artesanales.
+              </p>
+              <p class="site-manifesto">
+                <span>Manifiesto:</span> Escrito a mano, desplegado con
+                intención.
+              </p>
+            </>
+          ) : (
+            <a href="/" class="site-mark-link" aria-label="Volver al inicio">
+              <img
+                src="/brand/favicon.svg"
+                alt=""
+                class="site-mark"
+                aria-hidden="true"
+              />
+            </a>
+          )
+        }
       </header>
 
       <main class="site-main">
@@ -69,7 +108,50 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
       </main>
 
       <footer class="site-footer">
-        <span>Escrito a mano, desplegado con intención.</span>
+        <nav class="footer-links" aria-label="Enlaces externos">
+          <a
+            class="footer-link"
+            href="https://d2134ixdakjhb7.cloudfront.net/index.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Abrir proyecto del ojo"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+              ></path>
+              <circle cx="12" cy="12" r="2.75"></circle>
+            </svg>
+            <span>Portfolio</span>
+          </a>
+          <a
+            class="footer-link"
+            href="https://dgavxo1zmkai7.cloudfront.net/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Abrir lienzo"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <rect x="4" y="4" width="16" height="16" rx="1.5"></rect>
+              <path d="M8 8h8M8 12h8M8 16h5"></path>
+            </svg>
+            <span>Lienzo</span>
+          </a>
+          <a
+            class="footer-link"
+            href="https://github.com/chrispam123"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Abrir GitHub de Christian Gohring"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path
+                d="M12 2.5a9.5 9.5 0 0 0-3 18.51c.48.09.66-.21.66-.47v-1.84c-2.7.59-3.27-1.14-3.27-1.14-.44-1.12-1.08-1.42-1.08-1.42-.88-.6.07-.59.07-.59.97.07 1.48 1 1.48 1 .87 1.48 2.28 1.05 2.84.8.09-.62.34-1.05.62-1.29-2.16-.25-4.43-1.08-4.43-4.81 0-1.06.38-1.92 1-2.6-.1-.25-.43-1.23.1-2.57 0 0 .82-.26 2.67.99A9.3 9.3 0 0 1 12 6.74c.82 0 1.65.11 2.42.33 1.84-1.25 2.66-.99 2.66-.99.53 1.34.2 2.32.1 2.57.62.68 1 1.54 1 2.6 0 3.74-2.27 4.56-4.44 4.8.35.31.66.92.66 1.86v2.76c0 .26.18.56.67.47A9.5 9.5 0 0 0 12 2.5Z"
+              ></path>
+            </svg>
+            <span>GitHub</span>
+          </a>
+        </nav>
+        <small class="footer-copyright">©2026 Christian Gohring</small>
       </footer>
     </div>
   </body>
@@ -77,7 +159,7 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
 
 <script is:inline>
   ;(() => {
-    const sideArtImages = document.querySelectorAll('.side-art img')
+    const sideArtTracks = document.querySelectorAll('.side-art-track')
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
     const desktopLayout = window.matchMedia('(min-width: 1101px)')
     let animationFrame = 0
@@ -88,10 +170,16 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
       animationFrame = 0
       const scrollPosition =
         window.scrollY || document.documentElement.scrollTop
-      const offset = scrollPosition * -0.12
+      const parallaxDistance = scrollPosition * -0.12
 
-      sideArtImages.forEach((image) => {
-        image.style.transform = `translateY(${offset}px)`
+      sideArtTracks.forEach((track) => {
+        const tile = track.querySelector('img')
+        const tileHeight = tile?.getBoundingClientRect().height ?? 0
+
+        if (!tileHeight) return
+
+        const offset = parallaxDistance % tileHeight
+        track.style.transform = `translateY(${offset - tileHeight}px)`
       })
     }
 
@@ -105,6 +193,8 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
       passive: true,
       capture: true,
     })
+    window.addEventListener('resize', scheduleUpdate, { passive: true })
+    window.addEventListener('load', updateSideArt, { once: true })
     updateSideArt()
   })()
 </script>
@@ -165,12 +255,17 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
 
   /* Header: nombre del blog arriba, espacioso */
   .site-header {
-    padding: 4rem 0 3rem;
+    padding: 4rem 0 1.5rem;
     border-bottom: 1px solid var(--color-border);
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+  }
+
+  .site-header-compact {
+    padding: 1.5rem 0 0.75rem;
+    margin-bottom: 0.75rem;
   }
 
   .site-title {
@@ -191,6 +286,15 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
     margin-bottom: 0.5rem;
   }
 
+  .site-mark-link {
+    display: inline-flex;
+    width: fit-content;
+  }
+
+  .site-header-compact .site-mark {
+    margin-bottom: 0;
+  }
+
   .side-art {
     position: fixed;
     top: 0;
@@ -202,12 +306,13 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
     z-index: 0;
   }
 
-  .side-art img {
+  .side-art-track {
     position: absolute;
     top: 0;
-    width: 210%;
-    max-width: none;
-    height: auto;
+    left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
     will-change: transform;
   }
 
@@ -216,6 +321,7 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
   }
 
   .side-art-left img {
+    position: relative;
     left: 0;
   }
 
@@ -224,7 +330,15 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
   }
 
   .side-art-right img {
+    position: relative;
     left: -110%;
+  }
+
+  .side-art img {
+    display: block;
+    width: 210%;
+    max-width: none;
+    height: auto;
   }
 
   @media (max-width: 1100px) {
@@ -238,12 +352,42 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
     transition: opacity 0.2s ease;
   }
 
-  .site-tagline {
-    font-family: var(--font-body);
-    font-size: 0.75rem;
+  .site-intro-title {
+    max-width: 18ch;
+    margin-top: 0.25rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: -0.045em;
+    line-height: 1.05;
+    color: var(--color-accent);
+  }
+
+  .site-intro-copy {
+    max-width: 58ch;
+    margin-top: 1.5rem;
+    color: #68645f;
+    font-size: 0.95rem;
+    line-height: 1.8;
+  }
+
+  .site-manifesto {
+    max-width: 58ch;
+    margin-top: 1.25rem;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--color-border);
     color: var(--color-muted);
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
+    font-size: 0.65rem;
     letter-spacing: 0.12em;
+    line-height: 1.7;
     text-transform: uppercase;
+  }
+
+  .site-manifesto span {
+    color: var(--color-accent);
   }
 
   /* Footer: discreto, al fondo */
@@ -251,10 +395,52 @@ const { title, description = 'Autopoiesis — codigo y pensamientos' } =
     margin-top: 6rem;
     padding: 2rem 0 3rem;
     border-top: 1px solid var(--color-border);
-    font-size: 0.7rem;
     color: var(--color-muted);
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+
+  .footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    align-items: center;
+  }
+
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: inherit;
+    font-size: 0.7rem;
+    text-decoration: none;
+  }
+
+  .footer-link svg {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.6;
+  }
+
+  .footer-link:nth-child(3) svg {
+    fill: currentColor;
+    stroke: none;
+  }
+
+  .footer-link:hover {
+    color: var(--color-accent);
+  }
+
+  .footer-copyright {
+    display: block;
+    margin-top: 1rem;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: none;
   }
 
   /* Tipografía general para el contenido de los posts */
