@@ -1,0 +1,2078 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      AETHER: El Viaje Visual de las Cabeceras HTTP (Google IdP ⟷ Cognito ⟷
+      PKCE)
+    </title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Three.js, CSS3DRenderer, GLTFLoader, DRACOLoader & GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS3DRenderer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+      :root {
+        --bg-dark: #06080d;
+        --accent-cyan: #38bdf8;
+        --accent-google: #4285f4;
+        --accent-cognito: #f59e0b;
+        --accent-secret: #ef4444;
+        --accent-pkce: #c084fc;
+        --accent-tokens: #10b981;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+      }
+
+      body {
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        overflow: hidden;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      /* 3D WebGL Canvas Layer */
+      #webgl-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+      }
+
+      /* CSS3D Scene Layer (For 3D-perspective scaled DOM elements) */
+      #css3d-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 5;
+        pointer-events: none;
+      }
+
+      /* Holographic 3D DOM Card (Pure DOM living physically in 3D Space via CSS3D) */
+      .hologram-3d-card {
+        width: 540px;
+        background: rgba(7, 10, 18, 0.94);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 2px solid var(--accent-cyan);
+        border-radius: 16px;
+        box-shadow:
+          0 0 35px rgba(56, 189, 248, 0.35),
+          inset 0 0 15px rgba(56, 189, 248, 0.08);
+        color: #f8fafc;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        overflow: hidden;
+        pointer-events: auto;
+        user-select: text;
+        transition:
+          border-color 0.4s ease,
+          box-shadow 0.4s ease;
+      }
+
+      .hologram-top-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .hologram-badge-pill {
+        font-family: 'Fira Code', monospace;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 6px;
+        background: rgba(56, 189, 248, 0.2);
+        color: #38bdf8;
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        white-space: nowrap;
+      }
+
+      .hologram-badge-secret {
+        background: rgba(239, 68, 68, 0.3) !important;
+        color: #f87171 !important;
+        border-color: rgba(239, 68, 68, 0.6) !important;
+        animation: pulseSecret 1.5s infinite alternate;
+      }
+
+      .hologram-badge-redirect {
+        background: rgba(245, 158, 11, 0.25) !important;
+        color: #fbbf24 !important;
+        border-color: rgba(245, 158, 11, 0.4) !important;
+      }
+
+      .hologram-badge-success {
+        background: rgba(16, 185, 129, 0.25) !important;
+        color: #34d399 !important;
+        border-color: rgba(16, 185, 129, 0.4) !important;
+      }
+
+      .hologram-badge-post {
+        background: rgba(192, 132, 252, 0.25) !important;
+        color: #c084fc !important;
+        border-color: rgba(192, 132, 252, 0.4) !important;
+      }
+
+      @keyframes pulseSecret {
+        0% {
+          box-shadow: 0 0 5px rgba(239, 68, 68, 0.4);
+        }
+        100% {
+          box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+        }
+      }
+
+      .hologram-route-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .hologram-host-row {
+        padding: 8px 18px 4px 18px;
+        font-family: 'Fira Code', monospace;
+        font-size: 11px;
+        color: #64748b;
+      }
+
+      .hologram-body {
+        padding: 6px 18px 12px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .hologram-header-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-family: 'Fira Code', monospace;
+        font-size: 11.5px;
+        line-height: 1.5;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: background 0.2s;
+      }
+
+      .hologram-header-line:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .hologram-header-key {
+        color: #94a3b8;
+        font-weight: 600;
+      }
+
+      .hologram-header-val {
+        font-weight: 700;
+        text-align: right;
+        max-width: 65%;
+        word-break: break-all;
+      }
+
+      .hologram-takeaway-banner {
+        background: rgba(0, 0, 0, 0.5);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 10px 18px;
+        font-size: 11.5px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* UI Layout Overlay */
+      #ui-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 16px 24px;
+      }
+
+      /* HTML Station Markers (3D-Tracked sobre cada estación) */
+      #markers-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 4;
+        overflow: hidden;
+      }
+
+      .station-marker {
+        position: absolute;
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        transition: opacity 0.2s ease;
+      }
+
+      .station-badge {
+        background: rgba(8, 12, 22, 0.85);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 5px 12px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        color: #f1f5f9;
+        white-space: nowrap;
+        border: none !important;
+      }
+
+      .marker-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+
+      .interactive {
+        pointer-events: auto;
+      }
+
+      /* Bottom Timeline & Step Explanation Deck (Sin líneas, bordes ni biseles) */
+      footer {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 4px;
+        width: 100%;
+      }
+
+      .timeline-container {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(10, 15, 26, 0.88);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: none !important;
+        border-radius: 999px;
+        padding: 6px 14px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+        max-width: 95vw;
+        overflow-x: auto;
+      }
+
+      .step-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        white-space: nowrap;
+        border: none !important;
+        outline: none !important;
+      }
+
+      .step-pill .step-circle {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .step-pill:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .step-pill.active {
+        background: rgba(56, 189, 248, 0.22);
+        border: none !important;
+        color: #fff;
+      }
+
+      .step-pill.active .step-circle {
+        background: var(--accent-cyan);
+        color: #06080d;
+      }
+
+      .step-pill.step-secret.active {
+        background: rgba(239, 68, 68, 0.25);
+        border: none !important;
+      }
+      .step-pill.step-secret.active .step-circle {
+        background: var(--accent-secret);
+        color: #fff;
+      }
+
+      .timeline-nav-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .nav-arrow-btn {
+        background: rgba(10, 15, 26, 0.88);
+        backdrop-filter: blur(12px);
+        border: none !important;
+        outline: none !important;
+        color: var(--text-main);
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 15px;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      }
+
+      .nav-arrow-btn:hover {
+        background: rgba(56, 189, 248, 0.3);
+        border: none !important;
+        transform: scale(1.08);
+      }
+
+      .nav-arrow-btn:disabled {
+        opacity: 0.25;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+
+      /* Bottom Step Explainer (Sin líneas ni biseles exteriores) */
+      .bottom-step-explainer {
+        width: 100%;
+        max-width: 1020px;
+        background: rgba(8, 12, 22, 0.94);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: none !important;
+        border-left: none !important;
+        border-radius: 12px;
+        padding: 12px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      }
+
+      .bottom-explainer-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .bottom-step-badge {
+        font-family: 'Fira Code', monospace;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 3px 9px;
+        border-radius: 6px;
+        background: rgba(56, 189, 248, 0.18);
+        color: var(--accent-cyan);
+        border: none !important;
+        outline: none !important;
+        white-space: nowrap;
+        transition: all 0.3s ease;
+      }
+
+      .bottom-step-channel {
+        font-size: 11px;
+        font-weight: 700;
+        color: #94a3b8;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .bottom-step-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .bottom-step-desc {
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: #cbd5e1;
+      }
+
+      .bottom-step-desc strong {
+        color: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- WebGL 3D Universe -->
+    <div id="webgl-canvas"></div>
+
+    <!-- CSS3D Layer for 3D-Perspective DOM Elements -->
+    <div id="css3d-layer"></div>
+
+    <!-- HTML Station Markers (3D-Tracked) -->
+    <div id="markers-layer">
+      <div id="marker-aether" class="station-marker">
+        <div class="station-badge">
+          <span
+            class="marker-dot"
+            style="background: #38bdf8; box-shadow: 0 0 8px #38bdf8"
+          ></span>
+          AETHER (Navegador SPA)
+        </div>
+      </div>
+      <div id="marker-cognito" class="station-marker">
+        <div class="station-badge">
+          <span
+            class="marker-dot"
+            style="background: #f59e0b; box-shadow: 0 0 8px #f59e0b"
+          ></span>
+          AWS Cognito (User Pool)
+        </div>
+      </div>
+      <div id="marker-google" class="station-marker">
+        <div class="station-badge">
+          <span
+            class="marker-dot"
+            style="background: #4285f4; box-shadow: 0 0 8px #4285f4"
+          ></span>
+          Google OAuth2 (IdP)
+        </div>
+      </div>
+      <div id="marker-gateway" class="station-marker">
+        <div class="station-badge">
+          <span
+            class="marker-dot"
+            style="background: #c084fc; box-shadow: 0 0 8px #c084fc"
+          ></span>
+          AWS API Gateway (Portero)
+        </div>
+      </div>
+      <div id="marker-lambda" class="station-marker">
+        <div class="station-badge">
+          <span
+            class="marker-dot"
+            style="background: #10b981; box-shadow: 0 0 8px #10b981"
+          ></span>
+          AWS Lambda + DynamoDB & S3
+        </div>
+      </div>
+    </div>
+
+    <!-- Master UI Overlay (Clean & Unobstructed, everything located at the bottom) -->
+    <div id="ui-overlay">
+      <!-- Bottom Controls, Timeline & Step Explanation Deck -->
+      <footer class="interactive">
+        <div class="timeline-nav-row">
+          <button id="btn-prev" class="nav-arrow-btn" title="Paso anterior">
+            ❮
+          </button>
+
+          <div class="timeline-container">
+            <div class="step-pill active" data-step="0">
+              <span class="step-circle">1</span><span>Prep PKCE</span>
+            </div>
+            <div class="step-pill" data-step="1">
+              <span class="step-circle">2</span><span>AETHER ➔ Cognito</span>
+            </div>
+            <div class="step-pill" data-step="2">
+              <span class="step-circle">3</span><span>302 a Google</span>
+            </div>
+            <div class="step-pill" data-step="3">
+              <span class="step-circle">4</span><span>Código Google</span>
+            </div>
+            <div class="step-pill step-secret" data-step="4">
+              <span class="step-circle">5</span><span>🔒 Túnel Secret</span>
+            </div>
+            <div class="step-pill" data-step="5">
+              <span class="step-circle">6</span><span>302 Código Cognito</span>
+            </div>
+            <div class="step-pill" data-step="6">
+              <span class="step-circle">7</span><span>Canje PKCE</span>
+            </div>
+            <div class="step-pill" data-step="7">
+              <span class="step-circle">8</span><span>Tokens 200 OK</span>
+            </div>
+            <div class="step-pill" data-step="8">
+              <span class="step-circle">9</span><span>Llamada API</span>
+            </div>
+            <div class="step-pill" data-step="9">
+              <span class="step-circle">10</span><span>Lambda & S3</span>
+            </div>
+          </div>
+
+          <button id="btn-next" class="nav-arrow-btn" title="Paso siguiente">
+            ❯
+          </button>
+        </div>
+
+        <!-- Integrated Step Explanation (Directamente en la zona inferior indicada) -->
+        <div class="bottom-step-explainer" id="bottom-explainer">
+          <div class="bottom-explainer-header">
+            <span class="bottom-step-badge" id="step-count-badge"
+              >PASO 1 / 10</span
+            >
+            <span class="bottom-step-channel" id="step-channel-badge"
+              >CLIENTE LOCAL (SPA)</span
+            >
+            <span class="bottom-step-title" id="narrative-title"
+              >1. AETHER prepara el inicio de sesión</span
+            >
+          </div>
+          <div class="bottom-step-desc" id="narrative-desc">
+            Al pulsar "Continuar con Google", AETHER genera un valor aleatorio
+            llamado <strong>code_verifier</strong>. Calcula su huella SHA-256
+            (<strong>code_challenge</strong>) y crea <strong>state</strong>.
+            <em
+              >El navegador guarda esto localmente; NO existe el Google Client
+              Secret.</em
+            >
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      /* ==========================================================================
+       SYNTHESIZER AUDIO ENGINE (Web Audio API)
+       ========================================================================== */
+      class SoundEngine {
+        constructor() {
+          this.ctx = null
+          this.enabled = false
+        }
+        init() {
+          if (!this.ctx) {
+            const AudioContext =
+              window.AudioContext || window.webkitAudioContext
+            this.ctx = new AudioContext()
+          }
+          if (this.ctx.state === 'suspended') this.ctx.resume()
+        }
+        toggle() {
+          this.init()
+          this.enabled = !this.enabled
+          return this.enabled
+        }
+        beep(freq, duration, type = 'sine', gainVal = 0.1) {
+          if (!this.enabled || !this.ctx) return
+          const osc = this.ctx.createOscillator()
+          const g = this.ctx.createGain()
+          osc.type = type
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime)
+          g.gain.setValueAtTime(gainVal, this.ctx.currentTime)
+          g.gain.exponentialRampToValueAtTime(
+            0.001,
+            this.ctx.currentTime + duration,
+          )
+          osc.connect(g)
+          g.connect(this.ctx.destination)
+          osc.start()
+          osc.stop(this.ctx.currentTime + duration)
+        }
+        playStepSound(stepIdx) {
+          if (!this.enabled || !this.ctx) return
+          if (stepIdx === 4) {
+            // Secret tunnel alert sound!
+            this.beep(220, 0.25, 'sawtooth', 0.15)
+            setTimeout(() => this.beep(165, 0.35, 'sawtooth', 0.18), 100)
+          } else if (stepIdx === 7 || stepIdx === 9) {
+            // Success token chimes
+            ;[523.25, 659.25, 783.99].forEach((f, i) =>
+              setTimeout(() => this.beep(f, 0.2, 'sine', 0.08), i * 80),
+            )
+          } else {
+            // Packet flight tick
+            this.beep(420, 0.15, 'triangle', 0.08)
+            setTimeout(() => this.beep(560, 0.12, 'sine', 0.06), 60)
+          }
+        }
+      }
+      const sound = new SoundEngine()
+
+      /* ==========================================================================
+       THE EXACT 10-STEP BLUEPRINT DATA (From plano.txt.txt)
+       ========================================================================== */
+      const STAGES = [
+        {
+          stepNum: 1,
+          title: '1. AETHER prepara el inicio de sesión',
+          channel: 'CLIENTE LOCAL (SPA)',
+          desc: "Al pulsar <strong>'Continuar con Google'</strong>, AETHER genera un valor aleatorio llamado <strong>code_verifier</strong>. Calcula su huella SHA-256 (<strong>code_challenge</strong>) y crea <strong>state</strong> para reconocer la respuesta. El navegador guarda temporalmente el verifier. <em>No guarda ni envía el Google Client Secret.</em>",
+          colorTheme: '#38bdf8',
+          stationFrom: 'aether',
+          stationTo: 'aether',
+          packetPos: { x: -32, y: 1, z: 0 },
+          camPos: { x: -32, y: 8, z: 24 },
+          camTarget: { x: -32, y: 2, z: 0 },
+          card: {
+            badge: 'MEMORIA LOCAL DEL NAVEGADOR (SPA)',
+            badgeType: 'local',
+            method: 'AETHER LOCAL STORAGE',
+            target: 'preparacion_pkce',
+            host: 'window.sessionStorage',
+            headers: [
+              {
+                k: 'code_verifier',
+                v: 'dBjftJeZ4CVP-mB92K... [SECRETO LOCAL]',
+                color: '#c084fc',
+                note: 'Valor aleatorio seguro de 128 bytes',
+              },
+              {
+                k: 'code_challenge',
+                v: 'E9Mel-Bxksw52Eb... [SHA-256]',
+                color: '#c084fc',
+                note: 'Huella pública enviada a Cognito',
+              },
+              { k: 'code_challenge_method', v: 'S256', color: '#94a3b8' },
+              {
+                k: 'state',
+                v: 'STATE_ALEATORIO_491',
+                color: '#38bdf8',
+                note: 'Protección estricta contra CSRF',
+              },
+              {
+                k: 'google_client_secret',
+                v: '⛔ NUNCA EXISTE EN AETHER',
+                color: '#ef4444',
+                note: 'La SPA pública jamás debe conocer este secreto',
+              },
+            ],
+            takeaway:
+              '🛡️ AETHER guarda el code_verifier en secreto. Google Client Secret jamás toca el cliente.',
+          },
+        },
+        {
+          stepNum: 2,
+          title: '2. El navegador redirige a Cognito',
+          channel: 'NAVEGADOR ➔ COGNITO',
+          desc: 'El navegador abre el endpoint de autorización de Cognito. Aquí viaja el <strong>Cognito App Client ID</strong> (público) y el <strong>code_challenge</strong>. <em>No viajan ni el code_verifier ni el Google Client Secret.</em>',
+          colorTheme: '#38bdf8',
+          stationFrom: 'aether',
+          stationTo: 'cognito',
+          packetPos: { x: -21, y: 4, z: -8 },
+          camPos: { x: -21, y: 12, z: 18 },
+          camTarget: { x: -21, y: 4, z: -8 },
+          card: {
+            badge: 'HTTP GET REQUEST',
+            badgeType: 'get',
+            method: 'GET',
+            target: '/oauth2/authorize',
+            host: 'TU_DOMINIO_COGNITO.auth.us-east-1.amazoncognito.com',
+            headers: [
+              { k: 'response_type', v: 'code', color: '#38bdf8' },
+              {
+                k: 'client_id',
+                v: 'COGNITO_APP_CLIENT_ID (1h9v8...)',
+                color: '#38bdf8',
+                note: 'Identificador público del app client',
+              },
+              {
+                k: 'redirect_uri',
+                v: 'https://APP_CALLBACK',
+                color: '#94a3b8',
+              },
+              {
+                k: 'identity_provider',
+                v: 'Google',
+                color: '#4285f4',
+                note: 'Pide a Cognito federar directo con Google',
+              },
+              { k: 'scope', v: 'openid email profile', color: '#94a3b8' },
+              { k: 'state', v: 'STATE_ALEATORIO_491', color: '#38bdf8' },
+              {
+                k: 'code_challenge',
+                v: 'E9Mel-Bxksw52Eb... [HUELLA SHA256]',
+                color: '#c084fc',
+                note: 'Desafío PKCE registrado en Cognito',
+              },
+              { k: 'code_challenge_method', v: 'S256', color: '#94a3b8' },
+            ],
+            takeaway:
+              '🟢 Viaja el Client ID de Cognito y code_challenge. Ni verifier ni Google Secret van aquí.',
+          },
+        },
+        {
+          stepNum: 3,
+          title: '3. Cognito redirige el navegador a Google',
+          channel: 'COGNITO ➔ NAVEGADOR ➔ GOOGLE',
+          desc: 'Cognito comprueba que el app client y la URL de retorno sean válidos y responde con <strong>HTTP 302 Found</strong> hacia Google. La URL incluye el <strong>Google Client ID</strong> y la dirección de retorno en Cognito (<strong>/oauth2/idpresponse</strong>).',
+          colorTheme: '#4285f4',
+          stationFrom: 'cognito',
+          stationTo: 'google',
+          packetPos: { x: 0, y: 8, z: -20 },
+          camPos: { x: 0, y: 16, z: 6 },
+          camTarget: { x: 0, y: 8, z: -20 },
+          card: {
+            badge: 'HTTP 302 REDIRECT',
+            badgeType: 'redirect',
+            method: 'HTTP/1.1 302 Found',
+            target: 'Location: https://accounts.google.com/o/oauth2/v2/auth',
+            host: 'accounts.google.com',
+            headers: [
+              {
+                k: 'client_id',
+                v: 'GOOGLE_CLIENT_ID (1082...apps.googleusercontent.com)',
+                color: '#4285f4',
+                note: 'Identifica a la app en Google (Público)',
+              },
+              {
+                k: 'redirect_uri',
+                v: 'https://TU_DOMINIO_COGNITO/oauth2/idpresponse',
+                color: '#f59e0b',
+                note: 'Google debe retornar a Cognito',
+              },
+              { k: 'scope', v: 'openid email profile', color: '#94a3b8' },
+              { k: 'response_type', v: 'code', color: '#38bdf8' },
+              { k: 'state', v: 'STATE_DE_COGNITO_INTERNO', color: '#94a3b8' },
+            ],
+            takeaway:
+              '🌐 El Client ID no es el secreto: es normal que aparezca en la URL pública.',
+          },
+        },
+        {
+          stepNum: 4,
+          title: '4. Google devuelve el resultado a Cognito',
+          channel: 'GOOGLE ➔ NAVEGADOR ➔ COGNITO',
+          desc: 'El usuario autoriza el acceso en Google. Google redirige el navegador a Cognito con un <strong>código de autorización de Google</strong>. El navegador transporta este código hacia Cognito. AETHER aún no tiene tokens.',
+          colorTheme: '#f59e0b',
+          stationFrom: 'google',
+          stationTo: 'cognito',
+          packetPos: { x: 2, y: 9, z: -19 },
+          camPos: { x: 2, y: 17, z: 6 },
+          camTarget: { x: 2, y: 9, z: -19 },
+          card: {
+            badge: 'HTTP GET CALLBACK',
+            badgeType: 'get',
+            method: 'GET /oauth2/idpresponse',
+            target: '?code=CODIGO_DE_GOOGLE&state=...',
+            host: 'TU_DOMINIO_COGNITO',
+            headers: [
+              { k: 'Host', v: 'TU_DOMINIO_COGNITO', color: '#94a3b8' },
+              {
+                k: 'code',
+                v: '4/0AbCd123_CODIGO_DE_GOOGLE',
+                color: '#f59e0b',
+                note: 'Código efímero de Google (1 solo uso, ~60s)',
+              },
+              { k: 'state', v: 'STATE_DE_COGNITO_INTERNO', color: '#94a3b8' },
+            ],
+            takeaway:
+              '🎫 El navegador transporta el código de Google a Cognito. AETHER aún no ha recibido nada.',
+          },
+        },
+        {
+          stepNum: 5,
+          title: '5. Cognito se comunica con Google desde sus servidores',
+          channel: 'COGNITO ⟷ GOOGLE (TÚNEL PRIVADO)',
+          desc: '<strong>¡AQUÍ IMPORTA EL GOOGLE CLIENT SECRET!</strong> Cognito, actuando desde su servidor backend, intercambia el código con Google por HTTPS. Envía el <strong>Google Client Secret</strong>. Google valida las credenciales y devuelve los datos del usuario.',
+          colorTheme: '#ef4444',
+          stationFrom: 'cognito',
+          stationTo: 'google',
+          packetPos: { x: 2, y: 14, z: -20 },
+          camPos: { x: 2, y: 19, z: -3 },
+          camTarget: { x: 2, y: 12, z: -20 },
+          card: {
+            badge: 'POST /token (CANAL PRIVADO BACKEND)',
+            badgeType: 'secret',
+            method: 'POST /token HTTP/1.1',
+            target: 'Backchannel Server-to-Server',
+            host: 'oauth2.googleapis.com',
+            headers: [
+              {
+                k: 'Content-Type',
+                v: 'application/x-www-form-urlencoded',
+                color: '#94a3b8',
+              },
+              { k: 'grant_type', v: 'authorization_code', color: '#38bdf8' },
+              {
+                k: 'code',
+                v: '4/0AbCd123_CODIGO_DE_GOOGLE [SE CONSUME Y QUEMA]',
+                color: '#f59e0b',
+                note: 'Google lo invalida para siempre',
+              },
+              { k: 'client_id', v: 'GOOGLE_CLIENT_ID', color: '#4285f4' },
+              {
+                k: 'client_secret',
+                v: '[GOOGLE_CLIENT_SECRET_REDACTED_FOR_DIAGRAM]',
+                color: '#ef4444',
+                note: '¡LA LLAVE MAESTRA! Vive en Cognito, JAMÁS en el navegador',
+              },
+              {
+                k: 'redirect_uri',
+                v: 'https://TU_DOMINIO_COGNITO/oauth2/idpresponse',
+                color: '#94a3b8',
+              },
+            ],
+            takeaway:
+              '🔴 EL SECRETO SAGRADO: Solo viaja entre servidores. El navegador de AETHER nunca lo ve.',
+          },
+        },
+        {
+          stepNum: 6,
+          title: '6. Cognito devuelve un código a AETHER',
+          channel: 'COGNITO ➔ AETHER (NAVEGADOR)',
+          desc: 'La federación fue exitosa. Cognito redirige el navegador a la callback de AETHER entregando un <strong>código de Cognito</strong> (distinto del código que Google entregó). AETHER compara el <strong>state</strong> recibido con el que guardó al inicio.',
+          colorTheme: '#eab308',
+          stationFrom: 'cognito',
+          stationTo: 'aether',
+          packetPos: { x: -16, y: 5, z: -6 },
+          camPos: { x: -16, y: 13, z: 18 },
+          camTarget: { x: -16, y: 4, z: -6 },
+          card: {
+            badge: 'HTTP 302 FOUND',
+            badgeType: 'redirect',
+            method: 'HTTP/1.1 302 Found',
+            target:
+              'Location: https://APP_CALLBACK?code=CODIGO_DE_COGNITO&state=...',
+            host: 'APP_CALLBACK (Navegador AETHER)',
+            headers: [
+              {
+                k: 'code',
+                v: '3f82a1b9-CODIGO_DE_COGNITO',
+                color: '#eab308',
+                note: '¡Código propio de Cognito! No es el de Google',
+              },
+              {
+                k: 'state',
+                v: 'STATE_ALEATORIO_491 [VALIDADO]',
+                color: '#38bdf8',
+                note: 'AETHER confirma que coincide con su valor inicial',
+              },
+            ],
+            takeaway:
+              '🟡 Es un código emitido por Cognito. AETHER verifica el state antes de continuar.',
+          },
+        },
+        {
+          stepNum: 7,
+          title: '7. AETHER canjea el código de Cognito usando PKCE',
+          channel: 'AETHER ➔ COGNITO (ENDPOINT DE TOKENS)',
+          desc: 'AETHER envía una petición POST al endpoint de tokens de Cognito. Envía el <strong>code_verifier original</strong>. Cognito calcula su huella SHA-256 y comprueba que coincide exactamente con el <strong>code_challenge</strong> del Paso 2.',
+          colorTheme: '#c084fc',
+          stationFrom: 'aether',
+          stationTo: 'cognito',
+          packetPos: { x: -20, y: 5, z: -8 },
+          camPos: { x: -20, y: 14, z: 16 },
+          camTarget: { x: -20, y: 5, z: -8 },
+          card: {
+            badge: 'POST /oauth2/token (CANJE PKCE)',
+            badgeType: 'post',
+            method: 'POST /oauth2/token HTTP/1.1',
+            target: 'Canje seguro sin Secret',
+            host: 'TU_DOMINIO_COGNITO',
+            headers: [
+              {
+                k: 'Content-Type',
+                v: 'application/x-www-form-urlencoded',
+                color: '#94a3b8',
+              },
+              { k: 'grant_type', v: 'authorization_code', color: '#38bdf8' },
+              { k: 'client_id', v: 'COGNITO_APP_CLIENT_ID', color: '#38bdf8' },
+              { k: 'code', v: '3f82a1b9-CODIGO_DE_COGNITO', color: '#eab308' },
+              {
+                k: 'redirect_uri',
+                v: 'https://APP_CALLBACK',
+                color: '#94a3b8',
+              },
+              {
+                k: 'code_verifier',
+                v: 'dBjftJeZ4CVP-mB92K... [VERIFIER ORIGINAL]',
+                color: '#c084fc',
+                note: 'Cognito valida: SHA256(verifier) == challenge',
+              },
+            ],
+            takeaway:
+              '🔑 Canje seguro con PKCE: el cliente público no requiere secreto para recibir tokens.',
+          },
+        },
+        {
+          stepNum: 8,
+          title: '8. Cognito entrega tokens propios a AETHER',
+          channel: 'COGNITO ➔ AETHER',
+          desc: 'El canje es válido. Cognito responde con <strong>HTTP 200 OK</strong> entregando sus tokens: <strong>id_token</strong> (identidad), <strong>access_token</strong> (autorización) y <strong>refresh_token</strong>. Son tokens emitidos por Cognito, no por Google.',
+          colorTheme: '#10b981',
+          stationFrom: 'cognito',
+          stationTo: 'aether',
+          packetPos: { x: -28, y: 2, z: 0 },
+          camPos: { x: -28, y: 9, z: 22 },
+          camTarget: { x: -28, y: 2, z: 0 },
+          card: {
+            badge: 'HTTP 200 OK (TOKENS)',
+            badgeType: 'success',
+            method: 'HTTP/1.1 200 OK',
+            target: 'application/json',
+            host: 'Respuesta de Cognito',
+            headers: [
+              {
+                k: 'access_token',
+                v: '[DEMO_ACCESS_TOKEN_TRUNCATED]',
+                color: '#10b981',
+                note: 'Permisos para autorizar llamadas a AETHER',
+              },
+              {
+                k: 'id_token',
+                v: '[DEMO_ID_TOKEN_TRUNCATED]',
+                color: '#38bdf8',
+                note: 'Datos verificados del perfil del usuario',
+              },
+              {
+                k: 'refresh_token',
+                v: '[DEMO_REFRESH_TOKEN_TRUNCATED]',
+                color: '#f59e0b',
+                note: 'Para renovar la sesión sin volver a loguear',
+              },
+              { k: 'token_type', v: 'Bearer', color: '#94a3b8' },
+              { k: 'expires_in', v: '3600 (1 hora)', color: '#94a3b8' },
+            ],
+            takeaway:
+              '✨ Tokens emitidos por Cognito. La SPA los usa para mantener la sesión y llamar a su API.',
+          },
+        },
+        {
+          stepNum: 9,
+          title: '9. AETHER llama a API Gateway',
+          channel: 'AETHER ➔ API GATEWAY',
+          desc: 'Cuando la aplicación sincroniza datos, envía el <strong>access token de Cognito</strong> en la cabecera <strong>Authorization: Bearer</strong>. API Gateway valida la firma criptográfica y la expiración antes de dejar pasar la solicitud a Lambda.',
+          colorTheme: '#10b981',
+          stationFrom: 'aether',
+          stationTo: 'gateway',
+          packetPos: { x: 14, y: 0, z: 4 },
+          camPos: { x: 14, y: 8, z: 26 },
+          camTarget: { x: 14, y: 2, z: 4 },
+          card: {
+            badge: 'HTTP GET API CALL',
+            badgeType: 'get',
+            method: 'GET /vault/works HTTP/1.1',
+            target: 'Endpoint protegido',
+            host: 'api.aether.app (TU_API_GATEWAY)',
+            headers: [
+              { k: 'Host', v: 'TU_API_GATEWAY', color: '#94a3b8' },
+              {
+                k: 'Authorization',
+                v: 'Bearer [DEMO_JWT_TRUNCATED]',
+                color: '#10b981',
+                note: 'JWT validado por API Gateway',
+              },
+              { k: 'Accept', v: 'application/json', color: '#94a3b8' },
+            ],
+            takeaway:
+              '🪪 El JWT es la credencial del usuario. La SPA no incluye ningún secreto en la llamada.',
+          },
+        },
+        {
+          stepNum: 10,
+          title: '10. Lambda accede a DynamoDB y S3',
+          channel: 'API GATEWAY ➔ LAMBDA ➔ STORAGE',
+          desc: 'API Gateway acepta la petición y pasa a Lambda el evento con la identidad validada. Lambda utiliza su <strong>rol IAM de ejecución</strong> para acceder a <strong>DynamoDB</strong> (metadatos) y <strong>S3 privado</strong> (archivos .aether del usuario).',
+          colorTheme: '#10b981',
+          stationFrom: 'gateway',
+          stationTo: 'lambda',
+          packetPos: { x: 38, y: 1.6, z: 18.5 },
+          camPos: { x: 38, y: 9.5, z: 35 },
+          camTarget: { x: 38, y: 2.2, z: 12 },
+          card: {
+            badge: 'IAM EVENT EXECUTION',
+            badgeType: 'success',
+            method: 'EVENTO AUTENTICADO',
+            target: 'Lambda Execution Role',
+            host: 'AWS Internal Infrastructure',
+            headers: [
+              {
+                k: 'Identidad',
+                v: 'sub: 8a91-4c12 (Email verificado por Google)',
+                color: '#38bdf8',
+              },
+              {
+                k: 'DynamoDB',
+                v: 'Lectura de catálogo y metadatos',
+                color: '#f59e0b',
+                note: 'Verifica pertenencia de obras',
+              },
+              {
+                k: 'S3 Bucket',
+                v: 'Descarga de archivos cifrados .aether',
+                color: '#10b981',
+                note: 'Acceso con rol IAM de Lambda',
+              },
+              {
+                k: 'Respuesta',
+                v: 'HTTP 200 OK ➔ Obras entregadas a AETHER',
+                color: '#34d399',
+              },
+            ],
+            takeaway:
+              '📦 El flujo se cierra de forma segura: identidad validada y datos protegidos entregados.',
+          },
+        },
+      ]
+
+      let currentStep = 0
+      let autoTourTimer = null
+      let isFreeCam = false
+
+      /* ==========================================================================
+       THREE.JS SCENE SETUP
+       ========================================================================== */
+      const container = document.getElementById('webgl-canvas')
+      const scene = new THREE.Scene()
+      scene.fog = new THREE.FogExp2(0x06080d, 0.012)
+
+      const camera = new THREE.PerspectiveCamera(
+        46,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000,
+      )
+      camera.position.set(-32, 8, 24)
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance',
+      })
+      renderer.setSize(window.innerWidth, window.innerHeight)
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+      container.appendChild(renderer.domElement)
+
+      // CSS3D Renderer Setup (Renders real DOM HTML elements in 3D perspective space)
+      const cssContainer = document.getElementById('css3d-layer')
+      const cssRenderer = new THREE.CSS3DRenderer()
+      cssRenderer.setSize(window.innerWidth, window.innerHeight)
+      cssRenderer.domElement.style.position = 'absolute'
+      cssRenderer.domElement.style.top = '0'
+      cssRenderer.domElement.style.left = '0'
+      cssRenderer.domElement.style.pointerEvents = 'none'
+      cssContainer.appendChild(cssRenderer.domElement)
+
+      const cssScene = new THREE.Scene()
+
+      // The Pure DOM Element for the Headers Card
+      const cardEl = document.createElement('div')
+      cardEl.className = 'hologram-3d-card'
+      cardEl.id = 'hologram-card-dom'
+
+      // 3D CSS Object wrapping the DOM element
+      const card3DObject = new THREE.CSS3DObject(cardEl)
+      card3DObject.scale.set(0.016, 0.016, 0.016)
+      cssScene.add(card3DObject)
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement)
+      controls.enableDamping = true
+      controls.dampingFactor = 0.05
+      controls.maxDistance = 140
+      controls.minDistance = 5
+      controls.target.set(-32, 2, 0)
+
+      /* --- Shared 3D Asset Loaders (GLTF + DRACO) --- */
+      const dracoLoader = new THREE.DRACOLoader()
+      dracoLoader.setDecoderPath(
+        'https://www.gstatic.com/draco/versioned/decoders/1.5.6/',
+      )
+      const gltfLoader = new THREE.GLTFLoader()
+      gltfLoader.setDRACOLoader(dracoLoader)
+
+      /* --- Lighting --- */
+      const ambLight = new THREE.AmbientLight(0xffffff, 0.7)
+      scene.add(ambLight)
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.0)
+      dirLight.position.set(15, 35, 20)
+      scene.add(dirLight)
+
+      /* --- Cyber Grid Floor --- */
+      const grid = new THREE.GridHelper(200, 70, 0x1e293b, 0x0c1322)
+      grid.position.y = -8
+      scene.add(grid)
+
+      /* --- Starfield / Ambient Floating Data Nodes --- */
+      const pCount = 900
+      const pGeo = new THREE.BufferGeometry()
+      const pPos = new Float32Array(pCount * 3)
+      for (let i = 0; i < pCount * 3; i += 3) {
+        pPos[i] = (Math.random() - 0.5) * 220
+        pPos[i + 1] = (Math.random() - 0.5) * 90 + 10
+        pPos[i + 2] = (Math.random() - 0.5) * 220
+      }
+      pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3))
+      const pMat = new THREE.PointsMaterial({
+        color: 0x475569,
+        size: 0.6,
+        transparent: true,
+        opacity: 0.5,
+      })
+      const stars = new THREE.Points(pGeo, pMat)
+      scene.add(stars)
+
+      /* ==========================================================================
+       CANVAS 2D UTILITIES & TEXTURE GENERATORS
+       ========================================================================== */
+      function roundRect(context, x, y, width, height, radius, fill, stroke) {
+        context.beginPath()
+        context.moveTo(x + radius, y)
+        context.lineTo(x + width - radius, y)
+        context.quadraticCurveTo(x + width, y, x + width, y + radius)
+        context.lineTo(x + width, y + height - radius)
+        context.quadraticCurveTo(
+          x + width,
+          y + height,
+          x + width - radius,
+          y + height,
+        )
+        context.lineTo(x + radius, y + height)
+        context.quadraticCurveTo(x, y + height, x, y + height - radius)
+        context.lineTo(x, y + radius)
+        context.quadraticCurveTo(x, y, x + radius, y)
+        context.closePath()
+        if (fill) context.fill()
+        if (stroke) context.stroke()
+      }
+
+      // 1. AETHER Browser Window Display
+      function createBrowserScreenTexture() {
+        const c = document.createElement('canvas')
+        c.width = 1024
+        c.height = 640
+        const ctx = c.getContext('2d')
+
+        ctx.fillStyle = '#090d18'
+        ctx.fillRect(0, 0, 1024, 640)
+
+        // Top window header
+        ctx.fillStyle = '#1e293b'
+        ctx.fillRect(0, 0, 1024, 68)
+
+        // 3 Window control circles
+        ctx.fillStyle = '#ef4444'
+        ctx.beginPath()
+        ctx.arc(40, 34, 11, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#f59e0b'
+        ctx.beginPath()
+        ctx.arc(76, 34, 11, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#10b981'
+        ctx.beginPath()
+        ctx.arc(112, 34, 11, 0, Math.PI * 2)
+        ctx.fill()
+
+        // Omnibox / Address Bar
+        ctx.fillStyle = '#0f172a'
+        roundRect(ctx, 160, 14, 720, 40, 8, true, false)
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)'
+        ctx.lineWidth = 1.5
+        roundRect(ctx, 160, 14, 720, 40, 8, false, true)
+
+        ctx.font = "bold 18px 'Fira Code', monospace"
+        ctx.fillStyle = '#38bdf8'
+        ctx.textAlign = 'left'
+        ctx.fillText('🔒 https://aether.app/auth/login', 190, 40)
+
+        // Web App Screen Body
+        ctx.fillStyle = '#ffffff'
+        ctx.font = "800 48px 'Plus Jakarta Sans', sans-serif"
+        ctx.textAlign = 'center'
+        ctx.fillText('Æ AETHER', 512, 220)
+
+        ctx.fillStyle = '#94a3b8'
+        ctx.font = "600 20px 'Plus Jakarta Sans', sans-serif"
+        ctx.fillText('Almacén Creativo & Identidad Digital', 512, 260)
+
+        // Google Sign-In Button mock
+        ctx.fillStyle = '#ffffff'
+        roundRect(ctx, 320, 340, 384, 72, 12, true, false)
+        ctx.strokeStyle = '#cbd5e1'
+        ctx.lineWidth = 2
+        roundRect(ctx, 320, 340, 384, 72, 12, false, true)
+
+        // 4-color Google G icon on button
+        ctx.font = "bold 28px 'Plus Jakarta Sans', sans-serif"
+        ctx.fillStyle = '#4285f4'
+        ctx.fillText('G', 370, 386)
+
+        ctx.fillStyle = '#1e293b'
+        ctx.font = "700 22px 'Plus Jakarta Sans', sans-serif"
+        ctx.fillText('Continuar con Google', 535, 385)
+
+        const tex = new THREE.CanvasTexture(c)
+        tex.anisotropy = 4
+        return tex
+      }
+
+      // 2. Google Emblem Texture
+      function createGoogleEmblemTexture() {
+        const c = document.createElement('canvas')
+        c.width = 512
+        c.height = 512
+        const ctx = c.getContext('2d')
+
+        ctx.fillStyle = 'rgba(10, 16, 32, 0.95)'
+        ctx.fillRect(0, 0, 512, 512)
+
+        ctx.strokeStyle = '#4285f4'
+        ctx.lineWidth = 6
+        ctx.strokeRect(10, 10, 492, 492)
+
+        const cx = 256,
+          cy = 200,
+          r = 100,
+          w = 34
+
+        // Blue arc
+        ctx.strokeStyle = '#4285F4'
+        ctx.lineWidth = w
+        ctx.beginPath()
+        ctx.arc(cx, cy, r, -Math.PI / 4, Math.PI / 4, false)
+        ctx.stroke()
+
+        // Green arc
+        ctx.strokeStyle = '#34A853'
+        ctx.lineWidth = w
+        ctx.beginPath()
+        ctx.arc(cx, cy, r, Math.PI / 4, (3 * Math.PI) / 4, false)
+        ctx.stroke()
+
+        // Yellow arc
+        ctx.strokeStyle = '#FBBC05'
+        ctx.lineWidth = w
+        ctx.beginPath()
+        ctx.arc(cx, cy, r, (3 * Math.PI) / 4, (5 * Math.PI) / 4, false)
+        ctx.stroke()
+
+        // Red arc
+        ctx.strokeStyle = '#EA4335'
+        ctx.lineWidth = w
+        ctx.beginPath()
+        ctx.arc(cx, cy, r, (5 * Math.PI) / 4, (7 * Math.PI) / 4, false)
+        ctx.stroke()
+
+        // Blue crossbar
+        ctx.fillStyle = '#4285F4'
+        ctx.fillRect(cx - 10, cy - w / 2, r + 20, w)
+
+        // Typography
+        ctx.fillStyle = '#ffffff'
+        ctx.font = "bold 34px 'Plus Jakarta Sans', sans-serif"
+        ctx.textAlign = 'center'
+        ctx.fillText('Google OAuth 2.0', 256, 380)
+
+        ctx.fillStyle = '#94a3b8'
+        ctx.font = "600 20px 'Fira Code', monospace"
+        ctx.fillText('oauth2.googleapis.com', 256, 425)
+
+        const tex = new THREE.CanvasTexture(c)
+        tex.anisotropy = 4
+        return tex
+      }
+
+      // 3. API Gateway Arch Signboard Texture
+      function createGatewaySignTexture() {
+        const c = document.createElement('canvas')
+        c.width = 1024
+        c.height = 256
+        const ctx = c.getContext('2d')
+
+        ctx.fillStyle = '#1e1b4b'
+        ctx.fillRect(0, 0, 1024, 256)
+
+        ctx.strokeStyle = '#c084fc'
+        ctx.lineWidth = 6
+        ctx.strokeRect(10, 10, 1004, 236)
+
+        ctx.fillStyle = '#ffffff'
+        ctx.font = "800 52px 'Plus Jakarta Sans', sans-serif"
+        ctx.textAlign = 'center'
+        ctx.fillText('AWS API GATEWAY', 512, 100)
+
+        ctx.fillStyle = '#c084fc'
+        ctx.font = "bold 28px 'Fira Code', monospace"
+        ctx.fillText('⚡ JWT AUTH SCANNER & ROUTER', 512, 170)
+
+        const tex = new THREE.CanvasTexture(c)
+        tex.anisotropy = 4
+        return tex
+      }
+
+      /* ==========================================================================
+       WORLD STATIONS 3D COORDINATES & 5 AUTHENTIC CHARACTERS
+       ========================================================================== */
+      const stationCoords = {
+        aether: new THREE.Vector3(-34, 0, 0),
+        cognito: new THREE.Vector3(-10, 6, -16),
+        google: new THREE.Vector3(16, 10, -26),
+        gateway: new THREE.Vector3(14, -2, 4),
+        lambda: new THREE.Vector3(38, -2, 10),
+      }
+
+      // 1. PERSONAJE 1: NAVEGADOR (AETHER SPA) - Pantalla de laptop/browser con 3 botones y Omnibox
+      const aetherGroup = new THREE.Group()
+      aetherGroup.position.copy(stationCoords.aether)
+
+      // Base del escritorio / teclado metálico
+      const aBase = new THREE.Mesh(
+        new THREE.BoxGeometry(10, 0.5, 6.5),
+        new THREE.MeshStandardMaterial({
+          color: 0x0f172a,
+          roughness: 0.2,
+          metalness: 0.8,
+        }),
+      )
+      aBase.position.y = 0.25
+      aetherGroup.add(aBase)
+
+      // Marco exterior de la pantalla
+      const aScreenBezel = new THREE.Mesh(
+        new THREE.BoxGeometry(9.6, 6.4, 0.3),
+        new THREE.MeshStandardMaterial({
+          color: 0x1e293b,
+          roughness: 0.3,
+          metalness: 0.7,
+        }),
+      )
+      aScreenBezel.position.set(0, 3.5, -2.4)
+      aScreenBezel.rotation.x = -0.12
+      aetherGroup.add(aScreenBezel)
+
+      // Pantalla interactiva con textura de navegador
+      const aScreenMat = new THREE.MeshBasicMaterial({
+        map: createBrowserScreenTexture(),
+      })
+      const aScreenPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(9.2, 6.0),
+        aScreenMat,
+      )
+      aScreenPlane.position.set(0, 3.5, -2.23)
+      aScreenPlane.rotation.x = -0.12
+      aetherGroup.add(aScreenPlane)
+
+      // Halo cian inferior
+      const aRing = new THREE.Mesh(
+        new THREE.RingGeometry(5.2, 5.6, 32),
+        new THREE.MeshBasicMaterial({
+          color: 0x38bdf8,
+          side: THREE.DoubleSide,
+        }),
+      )
+      aRing.rotation.x = Math.PI / 2
+      aRing.position.y = 0.05
+      aetherGroup.add(aRing)
+      scene.add(aetherGroup)
+
+      // 2. PERSONAJE 2: GOOGLE OAUTH2 (IdP) - Monolito con logotipo 'G' y 4 anillos en órbita
+      const googleGroup = new THREE.Group()
+      googleGroup.position.copy(stationCoords.google)
+
+      const gMonolith = new THREE.Mesh(
+        new THREE.BoxGeometry(6.4, 9.6, 1.4),
+        new THREE.MeshStandardMaterial({
+          color: 0x070c1a,
+          roughness: 0.1,
+          metalness: 0.9,
+        }),
+      )
+      gMonolith.position.y = 5.0
+      googleGroup.add(gMonolith)
+
+      const gEmblemMat = new THREE.MeshBasicMaterial({
+        map: createGoogleEmblemTexture(),
+      })
+      const gEmblemPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(6.0, 6.0),
+        gEmblemMat,
+      )
+      gEmblemPlane.position.set(0, 5.0, 0.72)
+      googleGroup.add(gEmblemPlane)
+
+      // 4 Anillos giratorios en los colores oficiales de Google
+      const gRingColors = [0x4285f4, 0xea4335, 0xfbbc05, 0x34a853]
+      const googleRings = []
+      gRingColors.forEach((col, idx) => {
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(4.2 + idx * 0.7, 0.08, 16, 64),
+          new THREE.MeshBasicMaterial({
+            color: col,
+            transparent: true,
+            opacity: 0.9,
+          }),
+        )
+        ring.position.y = 5.0
+        ring.rotation.x = Math.PI / 3 + idx * 0.25
+        googleGroup.add(ring)
+        googleRings.push(ring)
+      })
+      scene.add(googleGroup)
+
+      // 3. PERSONAJE 3: AWS COGNITO (USER POOL) - Escudo hexagonal con busto holográfico de usuario
+      const cognitoGroup = new THREE.Group()
+      cognitoGroup.position.copy(stationCoords.cognito)
+
+      // Escudo hexagonal dorado
+      const cShieldGeo = new THREE.CylinderGeometry(5.2, 5.2, 0.4, 6)
+      const cShieldMat = new THREE.MeshStandardMaterial({
+        color: 0x241200,
+        emissive: 0xd97706,
+        emissiveIntensity: 0.5,
+        roughness: 0.2,
+        metalness: 0.8,
+      })
+      const cShield = new THREE.Mesh(cShieldGeo, cShieldMat)
+      cShield.rotation.x = Math.PI / 2
+      cShield.position.y = 4.0
+      cognitoGroup.add(cShield)
+
+      const cShieldWire = new THREE.Mesh(
+        new THREE.CylinderGeometry(5.4, 5.4, 0.42, 6),
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b, wireframe: true }),
+      )
+      cShieldWire.rotation.x = Math.PI / 2
+      cShieldWire.position.y = 4.0
+      cognitoGroup.add(cShieldWire)
+
+      // Busto holográfico 3D de Usuario
+      const cognitoBustGroup = new THREE.Group()
+      cognitoBustGroup.position.y = 4.0
+
+      const userHead = new THREE.Mesh(
+        new THREE.SphereGeometry(1.2, 32, 32),
+        new THREE.MeshStandardMaterial({
+          color: 0xffedd5,
+          emissive: 0xf59e0b,
+          emissiveIntensity: 0.8,
+          roughness: 0.1,
+          metalness: 0.5,
+        }),
+      )
+      userHead.position.y = 1.0
+      cognitoBustGroup.add(userHead)
+
+      const userChest = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.3, 2.6, 1.8, 32),
+        new THREE.MeshStandardMaterial({
+          color: 0x9a3412,
+          emissive: 0xd97706,
+          emissiveIntensity: 0.6,
+          roughness: 0.3,
+        }),
+      )
+      userChest.position.y = -0.6
+      cognitoBustGroup.add(userChest)
+      cognitoGroup.add(cognitoBustGroup)
+
+      // Credenciales / Badges de identidad orbitando al usuario
+      const cognitoCardsGroup = new THREE.Group()
+      cognitoCardsGroup.position.y = 4.0
+      for (let i = 0; i < 3; i++) {
+        const card = new THREE.Mesh(
+          new THREE.BoxGeometry(1.4, 0.9, 0.08),
+          new THREE.MeshStandardMaterial({
+            color: 0xfef08a,
+            emissive: 0xf59e0b,
+            emissiveIntensity: 0.8,
+          }),
+        )
+        const angle = (i * Math.PI * 2) / 3
+        card.position.set(Math.cos(angle) * 3.4, 0, Math.sin(angle) * 3.4)
+        card.rotation.y = -angle
+        cognitoCardsGroup.add(card)
+      }
+      cognitoGroup.add(cognitoCardsGroup)
+      scene.add(cognitoGroup)
+
+      // 4. PERSONAJE 4: AWS API GATEWAY - Gran pórtico/arco con cortina de láser de escaneo
+      const gatewayGroup = new THREE.Group()
+      gatewayGroup.position.copy(stationCoords.gateway)
+
+      const columnMat = new THREE.MeshStandardMaterial({
+        color: 0x1e1b4b,
+        roughness: 0.2,
+        metalness: 0.8,
+      })
+      const colLeft = new THREE.Mesh(
+        new THREE.BoxGeometry(1.6, 11, 1.6),
+        columnMat,
+      )
+      colLeft.position.set(-4.0, 5.5, 0)
+      gatewayGroup.add(colLeft)
+
+      const colRight = new THREE.Mesh(
+        new THREE.BoxGeometry(1.6, 11, 1.6),
+        columnMat,
+      )
+      colRight.position.set(4.0, 5.5, 0)
+      gatewayGroup.add(colRight)
+
+      // Lintel transversal superior
+      const lintel = new THREE.Mesh(
+        new THREE.BoxGeometry(10.2, 2.2, 2.2),
+        columnMat,
+      )
+      lintel.position.set(0, 11, 0)
+      gatewayGroup.add(lintel)
+
+      // Cartel del Gateway
+      const gatewaySignMat = new THREE.MeshBasicMaterial({
+        map: createGatewaySignTexture(),
+      })
+      const gatewaySignPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(9.6, 1.8),
+        gatewaySignMat,
+      )
+      gatewaySignPlane.position.set(0, 11, 1.12)
+      gatewayGroup.add(gatewaySignPlane)
+
+      // Cortina de escaneo láser (Scanned curtain)
+      const gatewayLaserPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(6.6, 9.5),
+        new THREE.MeshBasicMaterial({
+          color: 0xc084fc,
+          transparent: true,
+          opacity: 0.35,
+          side: THREE.DoubleSide,
+        }),
+      )
+      gatewayLaserPlane.position.set(0, 5.0, 0)
+      gatewayGroup.add(gatewayLaserPlane)
+      scene.add(gatewayGroup)
+
+      // 5. PERSONAJE 5: AWS LAMBDA + DYNAMODB & S3 - Símbolo λ tridimensional y almacenes satélites
+      const lambdaGroup = new THREE.Group()
+      lambdaGroup.position.copy(stationCoords.lambda)
+
+      // Base del motor serverless
+      const lBase = new THREE.Mesh(
+        new THREE.CylinderGeometry(5.2, 5.6, 0.6, 8),
+        new THREE.MeshStandardMaterial({
+          color: 0x1f1300,
+          emissive: 0xf58536,
+          emissiveIntensity: 0.4,
+          roughness: 0.2,
+        }),
+      )
+      lBase.position.y = 0.3
+      lambdaGroup.add(lBase)
+
+      // SÍMBOLO 3D DE LAMBDA (λ) - Cargado dinámicamente desde lambda.glb
+      const lambdaSymbolGroup = new THREE.Group()
+      lambdaSymbolGroup.position.y = 3.6
+      lambdaGroup.add(lambdaSymbolGroup)
+
+      gltfLoader.load(
+        'lambda.glb',
+        (gltf) => {
+          const model = gltf.scene
+
+          // Auto-bounding box para escalar y centrar el modelo 3D con precisión
+          const bbox = new THREE.Box3().setFromObject(model)
+          const size = bbox.getSize(new THREE.Vector3())
+          const center = bbox.getCenter(new THREE.Vector3())
+          const maxDim = Math.max(size.x, size.y, size.z)
+          const targetDim = 6.2 // Escala óptima y armónica para la estación Lambda
+          const scaleFactor = targetDim / (maxDim || 1)
+
+          model.scale.setScalar(scaleFactor)
+          model.position.x = -center.x * scaleFactor
+          model.position.y = -center.y * scaleFactor
+          model.position.z = -center.z * scaleFactor
+
+          model.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true
+              child.receiveShadow = true
+            }
+          })
+
+          lambdaSymbolGroup.add(model)
+        },
+        undefined,
+        (err) => {
+          console.warn('lambda.glb error al cargar:', err)
+        },
+      )
+
+      // Satélite 1: DynamoDB (Pila de 3 discos de base de datos)
+      const dynamoStack = new THREE.Group()
+      dynamoStack.position.set(-4.5, 2.0, -3.5)
+      const dbDiskMat = new THREE.MeshStandardMaterial({
+        color: 0x082f49,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.5,
+        roughness: 0.2,
+      })
+      for (let d = 0; d < 3; d++) {
+        const disk = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.8, 1.8, 0.5, 32),
+          dbDiskMat,
+        )
+        disk.position.y = d * 0.75
+        dynamoStack.add(disk)
+      }
+      lambdaGroup.add(dynamoStack)
+
+      // Satélite 2: Amazon S3 (Bucket Vault)
+      const s3Bucket = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.8, 1.5, 3.2, 32),
+        new THREE.MeshStandardMaterial({
+          color: 0x064e3b,
+          emissive: 0x10b981,
+          emissiveIntensity: 0.4,
+          roughness: 0.2,
+        }),
+      )
+      s3Bucket.position.set(4.5, 2.0, -3.5)
+      lambdaGroup.add(s3Bucket)
+
+      // Líneas de conexión láser entre Lambda y DynamoDB/S3
+      const beamMat = new THREE.LineBasicMaterial({ color: 0x38bdf8 })
+      const beamGeo1 = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 3.5, 0),
+        new THREE.Vector3(-4.5, 2.0, -3.5),
+      ])
+      lambdaGroup.add(new THREE.Line(beamGeo1, beamMat))
+
+      const beamGeo2 = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 3.5, 0),
+        new THREE.Vector3(4.5, 2.0, -3.5),
+      ])
+      lambdaGroup.add(
+        new THREE.Line(
+          beamGeo2,
+          new THREE.LineBasicMaterial({ color: 0x10b981 }),
+        ),
+      )
+
+      scene.add(lambdaGroup)
+
+      // 6. Secure Backchannel Tube (Cognito ⟷ Google)
+      const backchannelCurve = new THREE.CatmullRomCurve3([
+        stationCoords.cognito.clone().add(new THREE.Vector3(0, 4, 0)),
+        new THREE.Vector3(3, 14, -21),
+        stationCoords.google.clone().add(new THREE.Vector3(0, 4, 0)),
+      ])
+      const tubeMesh = new THREE.Mesh(
+        new THREE.TubeGeometry(backchannelCurve, 40, 0.45, 8, false),
+        new THREE.MeshStandardMaterial({
+          color: 0xef4444,
+          emissive: 0xd97706,
+          emissiveIntensity: 0.6,
+          transparent: true,
+          opacity: 0.45,
+          wireframe: true,
+        }),
+      )
+      scene.add(tubeMesh)
+
+      /* --- The 3D HTTP Packet Capsule Carrier (Custom 3D Ship: reducido.glb) --- */
+      const packetCarrier = new THREE.Group()
+      packetCarrier.position.copy(stationCoords.aether)
+
+      // Dynamic reactive light underneath the ship that changes color on every step
+      const carrierLight = new THREE.PointLight(0x38bdf8, 4, 25)
+      carrierLight.position.set(0, 0.1, 0)
+      packetCarrier.add(carrierLight)
+
+      // Glowing energy thruster disc underneath
+      const thrusterGeo = new THREE.CylinderGeometry(0.4, 0.6, 0.15, 24)
+      const thrusterMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.8,
+      })
+      const thrusterMesh = new THREE.Mesh(thrusterGeo, thrusterMat)
+      thrusterMesh.position.set(0, 0.25, 0)
+      packetCarrier.add(thrusterMesh)
+
+      // Holder for the imported 3D mesh (elevado en Y positivo)
+      const shipModelHolder = new THREE.Group()
+      shipModelHolder.position.y = 0.8
+      packetCarrier.add(shipModelHolder)
+
+      let customShipMaterials = []
+
+      gltfLoader.load(
+        'reducido.glb',
+        (gltf) => {
+          const model = gltf.scene
+
+          // Auto-calculate bounding box to scale and center any custom 3D model automatically
+          const bbox = new THREE.Box3().setFromObject(model)
+          const size = bbox.getSize(new THREE.Vector3())
+          const center = bbox.getCenter(new THREE.Vector3())
+          const maxDim = Math.max(size.x, size.y, size.z)
+          const targetDim = 2.1 // Reducido un 50% para escala óptima y elegante
+          const scaleFactor = targetDim / (maxDim || 1)
+
+          model.scale.setScalar(scaleFactor)
+          // Center the 3D model inside the ship group
+          model.position.x = -center.x * scaleFactor
+          model.position.y = -center.y * scaleFactor
+          model.position.z = -center.z * scaleFactor
+
+          // Collect materials so they can pulse and react dynamically to step colors
+          model.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true
+              child.receiveShadow = true
+              if (child.material) {
+                if (Array.isArray(child.material)) {
+                  child.material.forEach((m) => customShipMaterials.push(m))
+                } else {
+                  customShipMaterials.push(child.material)
+                }
+              }
+            }
+          })
+
+          shipModelHolder.add(model)
+        },
+        undefined,
+        (err) => {
+          console.warn('reducido.glb: usando cápsula alternativa', err)
+          // Fallback minimal cyber capsule if file is unavailable
+          const fallbackMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(3.2, 1.8, 2.2),
+            new THREE.MeshStandardMaterial({
+              color: 0x38bdf8,
+              emissive: 0x0284c7,
+              roughness: 0.2,
+            }),
+          )
+          shipModelHolder.add(fallbackMesh)
+        },
+      )
+
+      scene.add(packetCarrier)
+
+      /* ==========================================================================
+       CSS3D ENGINE: 100% PURE DOM HEADERS CARD LIVING IN 3D PERSPECTIVE SPACE
+       ========================================================================== */
+      // 3D to 2D Screen projection helper (used for HTML station labels)
+      function getScreenCoords(vec3) {
+        const v = vec3.clone().project(camera)
+        return {
+          x: (v.x * 0.5 + 0.5) * window.innerWidth,
+          y: (-(v.y * 0.5) + 0.5) * window.innerHeight,
+          visible: v.z < 1,
+        }
+      }
+
+      // Pure DOM update for the 3D Holographic Card (scales & travels with 3D camera)
+      function renderHologramCardDOM(stage) {
+        const card = stage.card
+        const themeColor = stage.colorTheme
+
+        cardEl.style.borderColor = themeColor
+        cardEl.style.boxShadow = `0 0 35px ${themeColor}66, inset 0 0 15px ${themeColor}15`
+
+        let badgeClass = 'hologram-badge-pill'
+        if (card.badgeType === 'secret') badgeClass += ' hologram-badge-secret'
+        else if (card.badgeType === 'redirect')
+          badgeClass += ' hologram-badge-redirect'
+        else if (card.badgeType === 'success')
+          badgeClass += ' hologram-badge-success'
+        else if (card.badgeType === 'post') badgeClass += ' hologram-badge-post'
+
+        let headersHtml = ''
+        card.headers.forEach((h) => {
+          headersHtml += `
+          <div class="hologram-header-line">
+            <span class="hologram-header-key">${h.k}:</span>
+            <span class="hologram-header-val" style="color: ${h.color || '#e2e8f0'};">${h.v}</span>
+          </div>
+        `
+        })
+
+        cardEl.innerHTML = `
+        <div class="hologram-top-bar">
+          <span class="${badgeClass}">${card.badge}</span>
+          <span class="hologram-route-title">${card.method} ${card.target}</span>
+        </div>
+        <div class="hologram-host-row">
+          Host: ${card.host}
+        </div>
+        <div class="hologram-body">
+          ${headersHtml}
+        </div>
+        <div class="hologram-takeaway-banner" style="color: ${themeColor};">
+          <span>${card.takeaway}</span>
+        </div>
+      `
+      }
+
+      /* ==========================================================================
+       HTML 3D-TRACKED STATION MARKERS
+       ========================================================================== */
+      const markerAether = document.getElementById('marker-aether')
+      const markerCognito = document.getElementById('marker-cognito')
+      const markerGoogle = document.getElementById('marker-google')
+      const markerGateway = document.getElementById('marker-gateway')
+      const markerLambda = document.getElementById('marker-lambda')
+
+      function updateStationMarkers() {
+        const updateOne = (el, worldPos) => {
+          if (!el) return
+          const sc = getScreenCoords(worldPos)
+          if (sc.visible) {
+            el.style.display = 'flex'
+            el.style.left = `${sc.x}px`
+            el.style.top = `${sc.y}px`
+          } else {
+            el.style.display = 'none'
+          }
+        }
+
+        updateOne(
+          markerAether,
+          stationCoords.aether.clone().add(new THREE.Vector3(0, 6.5, 0)),
+        )
+        updateOne(
+          markerCognito,
+          stationCoords.cognito.clone().add(new THREE.Vector3(0, 9.5, 0)),
+        )
+        updateOne(
+          markerGoogle,
+          stationCoords.google.clone().add(new THREE.Vector3(0, 11.5, 0)),
+        )
+        updateOne(
+          markerGateway,
+          stationCoords.gateway.clone().add(new THREE.Vector3(0, 12.5, 0)),
+        )
+        updateOne(
+          markerLambda,
+          stationCoords.lambda.clone().add(new THREE.Vector3(0, 10.0, 0)),
+        )
+      }
+
+      /* ==========================================================================
+       NAVIGATION & CINEMATIC GSAP CONTROLLER
+       ========================================================================== */
+      const narrativeStepBadge = document.getElementById('step-count-badge')
+      const narrativeChannelBadge =
+        document.getElementById('step-channel-badge')
+      const narrativeTitle = document.getElementById('narrative-title')
+      const narrativeDesc = document.getElementById('narrative-desc')
+      const bottomExplainer = document.getElementById('bottom-explainer')
+
+      function applyStage(idx) {
+        if (idx < 0 || idx >= STAGES.length) return
+        currentStep = idx
+        const stage = STAGES[currentStep]
+
+        // Update 3D Hologram DOM Card (Pure DOM living in 3D space)
+        renderHologramCardDOM(stage)
+
+        // Update Integrated Bottom Step Explainer (Sin bordes ni biseles)
+        narrativeStepBadge.textContent = `PASO ${stage.stepNum} / 10`
+        narrativeStepBadge.style.color = stage.colorTheme
+        narrativeStepBadge.style.background = `${stage.colorTheme}22`
+
+        narrativeChannelBadge.textContent = stage.channel
+        narrativeTitle.textContent = stage.title
+        narrativeDesc.innerHTML = stage.desc
+
+        // Update 3D Packet Carrier Emissive Glow & Thruster
+        const hexColor = parseInt(stage.colorTheme.replace('#', '0x'), 16)
+        carrierLight.color.setHex(hexColor)
+        thrusterMat.color.setHex(hexColor)
+        customShipMaterials.forEach((mat) => {
+          if (mat.emissive) {
+            mat.emissive.setHex(hexColor)
+            mat.emissiveIntensity = 0.35
+          }
+        })
+
+        // Play synthesized audio
+        sound.playStepSound(currentStep)
+
+        // Smooth GSAP Flight of the 3D Packet Carrier
+        gsap.to(packetCarrier.position, {
+          x: stage.packetPos.x,
+          y: stage.packetPos.y,
+          z: stage.packetPos.z,
+          duration: 1.6,
+          ease: 'power2.inOut',
+        })
+
+        // Smooth GSAP Camera Travel (if in tracking mode)
+        if (!isFreeCam) {
+          gsap.to(camera.position, {
+            x: stage.camPos.x,
+            y: stage.camPos.y,
+            z: stage.camPos.z,
+            duration: 1.8,
+            ease: 'power2.inOut',
+          })
+
+          gsap.to(controls.target, {
+            x: stage.camTarget.x,
+            y: stage.camTarget.y,
+            z: stage.camTarget.z,
+            duration: 1.8,
+            ease: 'power2.inOut',
+            onUpdate: () => controls.update(),
+          })
+        }
+
+        // Update Timeline step buttons
+        document.querySelectorAll('.step-pill').forEach((pill, i) => {
+          if (i === currentStep) {
+            pill.classList.add('active')
+            pill.scrollIntoView({
+              behavior: 'smooth',
+              block: 'nearest',
+              inline: 'center',
+            })
+          } else {
+            pill.classList.remove('active')
+          }
+        })
+
+        document.getElementById('btn-prev').disabled = currentStep === 0
+        document.getElementById('btn-next').disabled =
+          currentStep === STAGES.length - 1
+      }
+
+      /* ==========================================================================
+       USER INTERFACE EVENT LISTENERS
+       ========================================================================== */
+      document.getElementById('btn-prev').addEventListener('click', () => {
+        applyStage(currentStep - 1)
+      })
+
+      document.getElementById('btn-next').addEventListener('click', () => {
+        applyStage(currentStep + 1)
+      })
+
+      document.querySelectorAll('.step-pill').forEach((pill) => {
+        pill.addEventListener('click', () => {
+          const target = parseInt(pill.getAttribute('data-step'), 10)
+          applyStage(target)
+        })
+      })
+
+      // Keyboard Navigation (Left / Right / Space)
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') {
+          applyStage(Math.min(currentStep + 1, STAGES.length - 1))
+        } else if (e.key === 'ArrowLeft') {
+          applyStage(Math.max(currentStep - 1, 0))
+        }
+      })
+
+      /* ==========================================================================
+       MAIN ANIMATION & RENDER LOOP
+       ========================================================================== */
+      const clock = new THREE.Clock()
+
+      function animate() {
+        requestAnimationFrame(animate)
+
+        const elapsed = clock.getElapsedTime()
+
+        // Dynamic 3D character animations
+        cognitoBustGroup.rotation.y = Math.sin(elapsed * 1.2) * 0.25
+        cShieldWire.rotation.z = elapsed * 0.2
+        cognitoCardsGroup.rotation.y = elapsed * 0.8
+
+        googleRings.forEach((ring, idx) => {
+          ring.rotation.z = elapsed * (0.25 + idx * 0.12)
+        })
+
+        // API Gateway laser scanner pulse
+        gatewayLaserPlane.material.opacity = 0.3 + Math.sin(elapsed * 5) * 0.15
+
+        // Lambda 3D rotation & DynamoDB disks
+        lambdaSymbolGroup.rotation.y = elapsed * 0.45
+        dynamoStack.rotation.y = -elapsed * 0.3
+
+        // Hovering, subtle banking and thruster pulse of the custom ship
+        packetCarrier.position.y += Math.sin(elapsed * 2.8) * 0.006
+        shipModelHolder.rotation.y = Math.sin(elapsed * 1.5) * 0.12
+        thrusterMesh.scale.y = 0.35 + Math.sin(elapsed * 10) * 0.1
+
+        // Stars slow rotation
+        stars.rotation.y = elapsed * 0.015
+
+        // Position and orient the 3D Holographic DOM Card to float right over the packet carrier
+        card3DObject.position.copy(packetCarrier.position)
+        card3DObject.position.y += 4.8 // floats physically above packet carrier in 3D
+        card3DObject.quaternion.copy(camera.quaternion) // Always faces camera (Billboard effect)
+
+        controls.update()
+        renderer.render(scene, camera)
+        cssRenderer.render(cssScene, camera)
+
+        // Update HTML station tags
+        updateStationMarkers()
+      }
+
+      // Handle Window Resize for both WebGL and CSS3D renderers
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+        cssRenderer.setSize(window.innerWidth, window.innerHeight)
+      })
+
+      // Initialize first step
+      applyStage(0)
+      animate()
+    </script>
+  </body>
+</html>

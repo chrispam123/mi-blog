@@ -1,0 +1,116 @@
+1. AETHER prepara el inicio de sesión
+Al pulsar “Continuar con Google”, AETHER genera un valor aleatorio llamado code_verifier. Calcula su huella SHA-256, llamada code_challenge, y crea también state para reconocer la respuesta de este intento.
+
+El navegador guarda temporalmente el code_verifier y state. No guarda ni envía el Google Client Secret.
+2. El navegador redirige a Cognito
+El navegador abre una URL similar a esta —valores abreviados y ficticios—:
+GET /oauth2/authorize?
+    response_type=code&
+    client_id=COGNITO_APP_CLIENT_ID&
+    redirect_uri=https%3A%2F%2FAPP_CALLBACK&
+    identity_provider=Google&
+    scope=openid%20email%20profile&
+    state=STATE_ALEATORIO&
+    code_challenge=HUELLA_SHA256&
+    code_challenge_method=S256 HTTP/1.1
+Host: TU_DOMINIO_COGNITO
+
+
+Aquí viaja el Cognito App Client ID, que es público, y el code_challenge. No viajan ni el code_verifier ni el Google Client Secret.
+
+Cognito comprueba que el app client y la dirección de retorno sean válidos. Después inicia la federación con Google.
+3. Cognito redirige el navegador a Google
+Cognito responde al navegador con una redirección 302 a Google. La dirección incluye el Google Client ID, los permisos solicitados y una dirección de retorno de Cognito, normalmente /oauth2/idpresponse.
+
+De forma simplificada:
+HTTP/1.1 302 Found
+Location: https://accounts.google.com/...?
+  client_id=GOOGLE_CLIENT_ID&
+  redirect_uri=https%3A%2F%2FTU_DOMINIO_COGNITO%2Foauth2%2Fidpresponse&
+  scope=openid%20email%20profile&
+  response_type=code&
+  state=...
+
+navegador carga esa dirección. El usuario inicia sesión con Google —o Google reutiliza una sesión que ya tenga— y autoriza el acceso solicitado.
+
+El Client ID no es el secreto. Es normal que un identificador aparezca en una URL. Google documenta que la dirección de retorno autorizada debe apuntar al endpoint /oauth2/idpresponse de Cognito. AWS: configurar Google como proveedor de Cognito
+4. Google devuelve el resultado a Cognito
+Después de autenticar al usuario, Google redirige el navegador a Cognito con un código de autorización de Google:
+
+GET /oauth2/idpresponse?code=CODIGO_DE_GOOGLE&state=... HTTP/1.1
+Host: TU_DOMINIO_COGNITO
+El navegador transporta esa respuesta hacia Cognito. AETHER todavía no ha recibido los tokens de Cognito.
+5. Cognito se comunica con Google desde sus servidores
+Esta es la parte donde importa el Google Client Secret.
+
+Cognito, actuando desde su lado servidor, intercambia el código recibido con el endpoint de tokens de Google. El intercambio incluye el Google Client ID y el Google Client Secret, además del código y la dirección de retorno. La conexión va por HTTPS.
+
+Esquemáticamente:
+POST /token HTTP/1.1
+Host: oauth2.googleapis.com
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&
+code=CODIGO_DE_GOOGLE&
+client_id=GOOGLE_CLIENT_ID&
+client_secret=GOOGLE_CLIENT_SECRET&
+redirect_uri=https%3A%2F%2FTU_DOMINIO_COGNITO%2Foauth2%2Fidpresponse
+
+Esto es una representación del intercambio conceptual: Cognito gestiona la conversación con Google; el navegador de AETHER no debe enviar el Google Client Secret. Google valida el código y las credenciales de la aplicación y devuelve a Cognito datos/token de identidad del usuario.
+
+AWS indica que se proporciona el Client ID y Client Secret de Google al configurar Google como proveedor de identidad en el User Pool. AWS: configurar Google como proveedor de Cognito
+6. Cognito devuelve un código a AETHER
+Si la federación fue correcta, Cognito redirige el navegador a la callback de AETHER:
+HTTP/1.1 302 Found
+Location: https://APP_CALLBACK?code=CODIGO_DE_COGNITO&state=STATE_ALEATORIO
+
+Este es un código de Cognito, distinto del código que Google entregó a Cognito. AETHER compara el state recibido con el que guardó al empezar. Si coincide, continúa.
+7. AETHER canjea el código de Cognito usando PKCE
+Ahora AETHER envía una petición desde el navegador al endpoint de tokens de Cognito:
+
+POST /oauth2/token HTTP/1.1
+Host: TU_DOMINIO_COGNITO
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&
+client_id=COGNITO_APP_CLIENT_ID&
+code=CODIGO_DE_COGNITO&
+redirect_uri=https%3A%2F%2FAPP_CALLBACK&
+code_verifier=VERIFIER_ORIGINAL
+
+Este app client de la SPA no tiene secreto, así que no hace falta un Authorization: Basic ... de un app client confidencial. Cognito calcula la huella del code_verifier y comprueba que corresponde al code_challenge recibido al inicio.
+
+Este code_verifier es PKCE. No es el Google Client Secret. El endpoint de tokens de Cognito acepta canjes de Authorization Code con PKCE para clientes públicos. AWS: endpoint de tokens de Cognito
+8. Cognito entrega tokens propios a AETHER
+Si el canje es válido, la respuesta se parece a esto:
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "access_token": "JWT_DE_COGNITO",
+  "id_token": "JWT_DE_COGNITO",
+  "refresh_token": "REFRESH_DE_COGNITO",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}
+
+Son tokens emitidos por Cognito, no por Google. La SPA los utiliza para mantener la sesión y autorizar llamadas a los servicios de AETHER.
+9. AETHER llama a API Gateway
+Cuando la aplicación sincroniza datos, envía el access token de Cognito en la cabecera Authorization:
+
+GET /vault/works HTTP/1.1
+Host: TU_API_GATEWAY
+Authorization: Bearer JWT_DE_COGNITO
+El JWT es una credencial de la sesión del usuario. No es el Google Client Secret, y la SPA no incluye ese secreto en la llamada.
+
+API Gateway valida el JWT: comprueba que esté firmado por el User Pool esperado, que no haya expirado y que su audiencia corresponda al app client configurado. Si falla la validación, la petición no llega a Lambda.
+10. Lambda accede a DynamoDB y S3
+Si API Gateway acepta la petición, pasa a Lambda la solicitud y los datos de identidad validados. Lambda usa su rol IAM de ejecución para acceder a los almacenes
+
+Navegador --JWT Cognito--> API Gateway --evento autenticado--> Lambda
+                                                          ├─ DynamoDB: catálogo/metadatos
+                                                          └─ S3 privado: archivos .aether
+
+Luego la respuesta vuelve por API Gateway a AETHER. Que el JWT sea válido demuestra quién hizo la petición; la lógica del backend también debe comprobar que cada obra u objeto pertenece a ese usuario.
+
