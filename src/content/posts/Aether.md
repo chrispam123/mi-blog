@@ -13,7 +13,28 @@ Aether es una aplicación web y entorno de escritura diseñado como un santuario
 **Acceso a la Aplicación:**
 Puedes utilizar la versión oficial de Aether directamente desde tu navegador.
 
-**Acceder a Aether**
+<a class="aether-live-link" href="https://d1creuco3vvhk7.cloudfront.net/" target="_blank" rel="noopener noreferrer" aria-label="Abrir Aether en una nueva ventana">
+  Aether
+</a>
+
+<style>
+  .aether-live-link {
+    display: inline-flex;
+    align-items: center;
+    margin: 0.25rem 0 1rem;
+    color: #0b7893;
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-color: rgba(11, 120, 147, 0.45);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .aether-live-link:hover {
+    opacity: 0.65;
+  }
+</style>
 
 Características Principales
 Santuario Reflexivo: Una interfaz limpia y monocromática inspirada en la calma mineral, diseñada para la concentración pura.
