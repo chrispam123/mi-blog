@@ -2,6 +2,8 @@
 title: 'Política de Privacidad — Aether'
 date: 2026-11-09
 description: 'Politicas de Privacidad'
+image: '/images/posts/poliaether.webp'
+imagePosition: '50% 40%'
 ---
 
 ## 1. Declaración de Principios y Filosofía del Producto
@@ -78,6 +80,8 @@ Podremos actualizar esta política si incorporamos nuevas capacidades técnicas 
 Para cualquier duda, sugerencia sobre el tratamiento de datos o ejercicio de tus derechos, puedes contactar directamente al responsable del proyecto:
 
 Christian Gohring
+
+Aplicación: <a href="https://d1creuco3vvhk7.cloudfront.net/" target="_blank" rel="noopener noreferrer" style="color: #0b7893; text-decoration: underline; text-decoration-color: rgba(11, 120, 147, 0.45); text-decoration-thickness: 1px; text-underline-offset: 0.18em;">Aether</a>
 
 Correo de contacto: uopechris@gmail.com
 
