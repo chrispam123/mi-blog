@@ -498,3 +498,18 @@ Al mismo tiempo, es honesto reconocer sus límites: **mantener los tokens en mem
   startPopInterval();
 })();
 </script>
+
+### El resultado en producción: menos rastro, reglas claras
+
+El cambio ya está aplicado y Aether funciona hoy bajo este nuevo modelo de sesión. En la práctica, el comportamiento de la aplicación queda definido por cuatro reglas muy concretas:
+
+- **Sesión volátil en memoria:** Aether mantiene los tokens exclusivamente en memoria mientras la pestaña está abierta; ya no los escribe ni los restaura desde `localStorage`, por lo que dejan de estar expuestos a simple vista en el almacenamiento del navegador al abrir las herramientas de desarrollo (`F12`).
+- **Limpieza de rastros anteriores:** Al arrancar, la aplicación elimina de forma explícita las claves antiguas `aether_auth_tokens` y `aether_auth_author` que pudieran haber quedado almacenadas en el navegador de versiones previas.
+- **Flujo PKCE intacto:** Sigue utilizando `sessionStorage` de manera estrictamente temporal para guardar `state` y `code_verifier`, dos valores efímeros de un solo uso con muy bajo riesgo que se limpian en cuanto finaliza el intercambio del _callback_ OAuth/PKCE.
+- **Cierre limpio al salir:** Al recargar o cerrar la pestaña, la sesión local desaparece por completo y el usuario vuelve a iniciar sesión cuando quiera sincronizar (un proceso rápido si Google conserva su propia sesión activa en el navegador).
+
+Conviene cerrar este punto con la misma honestidad con la que escribo mis ideas: mantener los tokens en memoria reduce drásticamente la persistencia en disco, aunque no protege frente a un script XSS activo mientras la pestaña permanece abierta.
+
+En seguridad no existen soluciones absolutas, sino decisiones conscientes sobre qué riesgos estás dispuesto a asumir y cuáles prefieres cortar de raíz. Sacar los tokens de `localStorage` era el paso lógico y limpio para mantener Aether fiel a su arquitectura ligera. El siguiente frente en esta auditoría ya tiene nombre: endurecer la sincronización en la nube para que sea verdaderamente durable y atómica entre S3 y DynamoDB, pero eso llegará cuando se implemente y será historia para otro ensayo.
+
+<p align="center"><img src="/images/posts/govalejo.webp" alt="Descripción de la imagen" width="70%"</p>
