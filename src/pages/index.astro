@@ -26,7 +26,10 @@ const posts = (await getCollection('posts')).sort(
                 day: 'numeric',
               })}
             </time>
-            <a href={`/posts/${post.id}`} class="post-title">
+            <a
+              href={post.data.experienceUrl ?? `/posts/${post.id}`}
+              class="post-title"
+            >
               {post.data.title}
             </a>
             {post.data.description && (
@@ -35,7 +38,7 @@ const posts = (await getCollection('posts')).sort(
           </div>
           {post.data.image && (
             <a
-              href={`/posts/${post.id}`}
+              href={post.data.experienceUrl ?? `/posts/${post.id}`}
               class="post-image-link"
               aria-label={`Leer ${post.data.title}`}
             >
@@ -64,7 +67,7 @@ const posts = (await getCollection('posts')).sort(
 
   .post-item {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 160px;
+    grid-template-columns: minmax(0, 1fr) 240px;
     gap: 2rem;
     align-items: center;
   }
@@ -119,12 +122,13 @@ const posts = (await getCollection('posts')).sort(
 
   @media (max-width: 640px) {
     .post-item {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(160px, 40%);
       gap: 1rem;
+      align-items: center;
     }
 
     .post-image-link {
-      width: min(100%, 240px);
+      width: 100%;
     }
   }
 </style>

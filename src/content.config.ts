@@ -11,6 +11,7 @@ const posts = defineCollection({
     description: z.string().optional(),
     image: z.string().optional(),
     imagePosition: z.string().optional(),
+    experienceUrl: z.string().optional(),
     showArchitectureDiagram: z.boolean().optional(), // ◄ Añadimos esta línea
     // ◄ AÑADE ESTA LÍNEA PARA QUE EL SLUG RECONOZCA LA BANDERA
     showInteractiveComponent: z.boolean().optional(),

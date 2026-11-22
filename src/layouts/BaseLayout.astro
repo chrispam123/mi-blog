@@ -45,7 +45,7 @@ const isHome = Astro.url.pathname === '/'
     />
   </head>
 
-  <body>
+  <body class={isHome ? 'home-page' : ''}>
     <div class="side-art side-art-left" aria-hidden="true">
       <div class="side-art-track">
         <img src="/images/layout/caras11-transparent.png" alt="" />
@@ -216,6 +216,11 @@ const isHome = Astro.url.pathname === '/'
 
     --max-width: 680px; /* ancho máximo del contenido */
     --spacing-unit: 1rem;
+  }
+
+  /* La portada usa un lienzo algo más ancho; el arte lateral se adapta a --max-width. */
+  .home-page {
+    --max-width: 820px;
   }
 
   /* Reset mínimo y base */

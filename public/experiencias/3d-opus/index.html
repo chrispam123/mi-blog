@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nocturne — El mundo es relativo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&family=IBM+Plex+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      document.documentElement.classList.add('is-loading')
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+      window.scrollTo(0, 0)
+    </script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- grano de papel -->
+    <svg class="grain" aria-hidden="true">
+      <filter id="paper">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency=".85"
+          numOctaves="3"
+          stitchTiles="stitch"
+        />
+        <feColorMatrix
+          values="0 0 0 0 .25  0 0 0 0 .18  0 0 0 0 .1  0 0 0 .55 0"
+        />
+      </filter>
+      <rect width="100%" height="100%" filter="url(#paper)" />
+    </svg>
+    <svg class="bg-weave" aria-hidden="true">
+      <defs>
+        <clipPath id="wv-clip-a">
+          <path d="M7,43.5 Q38,21.5 69,43.5 V140 Q38,118 7,140 Z" />
+        </clipPath>
+        <clipPath id="wv-clip-b0">
+          <path d="M83,-22.5 Q114,-0.5 145,-22.5 V74 Q114,96 83,74 Z" />
+        </clipPath>
+        <clipPath id="wv-clip-b1">
+          <path d="M83,109.5 Q114,131.5 145,109.5 V206 Q114,228 83,206 Z" />
+        </clipPath>
+        <g id="wv-arcs-up" fill="none" stroke-width="3.6" stroke-linecap="butt">
+          <path d="M7,16 Q38,-6 69,16" />
+          <path d="M7,22.5 Q38,0.5 69,22.5" />
+          <path d="M7,29 Q38,7 69,29" />
+          <path d="M7,35.5 Q38,13.5 69,35.5" />
+        </g>
+        <g id="wv-arcs-dn" fill="none" stroke-width="3.6" stroke-linecap="butt">
+          <path d="M83,82 Q114,104 145,82" />
+          <path d="M83,88.5 Q114,110.5 145,88.5" />
+          <path d="M83,95 Q114,117 145,95" />
+          <path d="M83,101.5 Q114,123.5 145,101.5" />
+        </g>
+        <g id="wv-bars-a" stroke-width="6.5">
+          <line x1="11" y1="-20" x2="11" y2="260" />
+          <line x1="24.5" y1="-20" x2="24.5" y2="260" />
+          <line x1="38" y1="-20" x2="38" y2="260" />
+          <line x1="51.5" y1="-20" x2="51.5" y2="260" />
+          <line x1="65" y1="-20" x2="65" y2="260" />
+        </g>
+        <g id="wv-bars-b" stroke-width="6.5">
+          <line x1="87" y1="-80" x2="87" y2="260" />
+          <line x1="100.5" y1="-80" x2="100.5" y2="260" />
+          <line x1="114" y1="-80" x2="114" y2="260" />
+          <line x1="127.5" y1="-80" x2="127.5" y2="260" />
+          <line x1="141" y1="-80" x2="141" y2="260" />
+        </g>
+        <pattern
+          id="weave-tile"
+          patternUnits="userSpaceOnUse"
+          width="152"
+          height="132"
+        >
+          <g class="wv-red" clip-path="url(#wv-clip-a)">
+            <use href="#wv-bars-a" />
+          </g>
+          <g class="wv-red" clip-path="url(#wv-clip-b0)">
+            <use href="#wv-bars-b" />
+          </g>
+          <g class="wv-red" clip-path="url(#wv-clip-b1)">
+            <use href="#wv-bars-b" />
+          </g>
+          <use class="wv-ink" href="#wv-arcs-up" y="0" />
+          <use class="wv-ink" href="#wv-arcs-up" y="132" />
+          <use class="wv-ink" href="#wv-arcs-dn" y="-132" />
+          <use class="wv-ink" href="#wv-arcs-dn" y="0" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#weave-tile)" />
+    </svg>
+
+    <section id="journey">
+      <div class="stage">
+        <header class="folio" aria-label="Título y tramos del recorrido">
+          <p class="folio-title">
+            Nocturne · Flujo de identidad: extensión, Google y AWS
+          </p>
+          <div class="folio-bar" aria-hidden="true">
+            <span class="folio-track"></span
+            ><span class="folio-fill" id="folio-fill"></span>
+          </div>
+          <nav class="folio-acts" id="folio-acts" aria-label="Actos">
+            <button type="button" data-act="0" class="on">01 Login</button>
+            <button type="button" data-act="1">02 API</button>
+            <button type="button" data-act="2">03 Worker</button>
+            <button type="button" data-act="3">04 Grietas</button>
+          </nav>
+        </header>
+
+        <svg
+          id="scene"
+          viewBox="-420 -400 840 800"
+          role="img"
+          aria-label="Cubo isométrico: tres caras, tres gravedades — Usuario, Google y Nocturne"
+        >
+          <defs>
+            <pattern
+              id="hatch-light"
+              patternUnits="userSpaceOnUse"
+              width="7"
+              height="7"
+              patternTransform="rotate(30)"
+            >
+              <line x1="0" y1="0" x2="0" y2="7" class="h" />
+            </pattern>
+            <pattern
+              id="hatch-mid"
+              patternUnits="userSpaceOnUse"
+              width="4.5"
+              height="4.5"
+              patternTransform="rotate(-30)"
+            >
+              <line x1="0" y1="0" x2="0" y2="4.5" class="h" />
+            </pattern>
+            <pattern
+              id="hatch-dense"
+              patternUnits="userSpaceOnUse"
+              width="3.6"
+              height="3.6"
+              patternTransform="rotate(90)"
+            >
+              <line x1="0" y1="0" x2="0" y2="3.6" class="h" />
+              <line x1="0" y1="1.8" x2="3.6" y2="1.8" class="h thin" />
+            </pattern>
+            <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="6" />
+            </filter>
+            <filter id="ink">
+              <feTurbulence baseFrequency=".04" numOctaves="2" seed="3" />
+              <feDisplacementMap in="SourceGraphic" scale="1.6" />
+            </filter>
+            <filter
+              id="ink-ui"
+              x="-15%"
+              y="-25%"
+              width="130%"
+              height="150%"
+              color-interpolation-filters="sRGB"
+            >
+              <feTurbulence baseFrequency=".038" numOctaves="2" seed="5" />
+              <feDisplacementMap in="SourceGraphic" scale="2.6" />
+            </filter>
+          </defs>
+          <g id="world" filter="url(#ink)"></g>
+        </svg>
+
+        <div class="captions">
+          <article class="cap">
+            <p class="kicker">Prólogo · plano del usuario</p>
+            <h1>Dos credenciales.<br />Dos fronteras de confianza.</h1>
+            <p>
+              Este es tu mundo: Chrome, la extensión, tú. Aquí la gravedad
+              apunta hacia abajo… <em>por ahora.</em>
+            </p>
+          </article>
+          <article class="cap">
+            <p class="kicker">Primer giro · plano Google</p>
+            <h2>Para Google, eres un <code>sub</code> con permisos.</h2>
+            <p>
+              <code>chrome.identity</code> abre un portal. Al cruzarlo, lo que
+              era pared se vuelve suelo. Google decide quién eres y qué podrá
+              hacer Nocturne en YouTube. Te entrega una pieza
+              <span class="c-blue">azul</span>, el <em>code</em>, y la devuelve
+              por el portal (redirect).
+            </p>
+          </article>
+          <article class="cap">
+            <p class="kicker">Redirect · plano del usuario</p>
+            <h2>El code pasa por tus manos.</h2>
+            <p>
+              Chrome recibe el redirect de Google y lo entrega a Nocturne por un
+              <span class="c-gold">portal dorado</span>. La extensión solo
+              transporta el <span class="c-blue">code</span>: no puede canjearlo
+              ni abrir nada con él.
+            </p>
+          </article>
+          <article class="cap">
+            <p class="kicker">Segundo giro · plano Nocturne</p>
+            <h2>Lambda Auth: el puente de confianza.</h2>
+            <p>
+              El code llega por el portal dorado y encaja en Lambda Auth, que lo
+              canjea con Google. El refresh token pasa por
+              <strong>KMS</strong> y sale
+              <span class="c-green">cifrado</span> hacia DynamoDB. Con el
+              secreto de SSM, Nocturne forja su propia pieza
+              <span class="c-gold">dorada</span>: el JWT.
+            </p>
+          </article>
+          <article class="cap">
+            <p class="kicker">Vuelta a casa · plano del usuario</p>
+            <h2>Ahora llevas una pieza que solo Nocturne reconoce.</h2>
+            <p>
+              El JWT cruza el portal y encaja en <code>storage.local</code>. El
+              refresh token nunca llega aquí: se quedó, cifrado, en el mundo de
+              Nocturne.
+            </p>
+          </article>
+          <article class="cap">
+            <p class="kicker">De nuevo en Nocturne · acceso a la API</p>
+            <h2>Para la API, eres un <code>Bearer JWT</code>.</h2>
+            <p>
+              Cada <code>POST /jobs</code> o <code>GET /status</code> lleva la
+              pieza dorada. Upload y Status verifican su forma (firma y
+              vencimiento) y usan su <code>sub</code> para abrir solo tus
+              trabajos: <code>USER#sub / JOB#id</code>.
+            </p>
+          </article>
+          <article class="cap">
+            <p class="kicker">El momento puzzle · plano Google</p>
+            <h2>El JWT no abre YouTube.</h2>
+            <p>
+              Arrastra las piezas hacia la cerradura de
+              <strong>YouTube API</strong> para comprobarlo: el
+              <span class="c-gold">JWT dorado</span> rebota; solo el
+              <span class="c-blue">access token</span> encaja.
+            </p>
+            <p class="puzzle-msg" id="puzzle-msg" aria-live="polite">
+              Arrastra una pieza hasta YouTube API.
+            </p>
+          </article>
+          <article class="cap">
+            <p class="kicker">De noche · plano Nocturne (sin usuario)</p>
+            <h2>El usuario se fue. El Worker sigue solo.</h2>
+            <p>
+              Un mensaje <span class="c-purple">SQS</span> despierta al Worker
+              con <code>jobId</code> y <code>userId</code>. No hay navegador ni
+              JWT. Lee <code>PROFILE</code>, pasa la pieza
+              <span class="c-green">cifrada</span> por <strong>KMS</strong> y
+              recupera el refresh token.
+            </p>
+          </article>
+          <article class="cap">
+            <p class="kicker">De noche · plano Google</p>
+            <h2>Acceso renovado en silencio.</h2>
+            <p>
+              El Worker canjea el refresh token en Google, obtiene un
+              <span class="c-blue">access token</span> temporal y por fin abre
+              <strong>YouTube API</strong>.
+            </p>
+          </article>
+          <article class="cap">
+            <p class="kicker">
+              Las grietas en <code>main</code> · plano Nocturne
+            </p>
+            <h2>Dos puntos frágiles en la frontera.</h2>
+            <p>
+              <strong>1 · Credencial no garantizada:</strong> si Google omite el
+              refresh token, Auth emite el JWT igualmente y no actualiza el
+              perfil. Si ya había un refresh token en DynamoDB, se conserva; si
+              no lo había —o el anterior dejó de ser válido—, el Worker no podrá
+              autenticarse con Google.<br /><strong
+                >2 · Portal sin guardián:</strong
+              >
+              API Gateway no declara JWT authorizer; la validación vive dentro
+              de Upload y Status.
+            </p>
+          </article>
+          <article class="cap">
+            <p class="kicker">Epílogo · el mundo es relativo</p>
+            <h2>Un mismo usuario.<br />Tres gravedades.</h2>
+            <p>
+              Todo depende de desde qué cara mires el cubo. Elige una
+              perspectiva para girar el mundo:
+            </p>
+            <div class="epilogue-nav" id="epilogue-nav">
+              <button type="button" data-rot="0" data-who="user" class="on">
+                Usuario
+              </button>
+              <button type="button" data-rot="120" data-who="google">
+                Google
+              </button>
+              <button type="button" data-rot="-120" data-who="noct">
+                Nocturne
+              </button>
+            </div>
+            <p class="puzzle-msg" id="epilogue-msg">
+              Usuario: eres tú en Chrome, guardando el JWT en
+              <code>storage.local</code>.
+            </p>
+          </article>
+        </div>
+
+        <nav class="chips" aria-label="Plano activo">
+          <span data-i="0">Usuario</span><span data-i="1">Google</span
+          ><span data-i="2">Nocturne</span>
+          <em class="step-idx" id="step-idx">1 / 11</em>
+          <a
+            class="proj-link"
+            href="https://chromewebstore.google.com/detail/nocturne-youtube-extensio/gegaeadnamiaaeojgjciajdpdleaokge?authuser=0&amp;utm_source=app-launcher"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Ver Nocturne en Chrome Web Store"
+            >VER PROYECTO <span aria-hidden="true">↗</span></a
+          >
+        </nav>
+        <button class="zoom" id="zoom" type="button" aria-pressed="false">
+          ⊖ Ver el mundo <kbd>Z</kbd>
+        </button>
+        <aside
+          class="legend"
+          id="legend"
+          aria-label="Credenciales y dónde encajan"
+        ></aside>
+        <div class="hint">desliza ↓</div>
+      </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>
