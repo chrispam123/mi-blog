@@ -5,6 +5,7 @@ import DiagramaNocturne from '../../components/DiagramaNocturne.astro'
 
 // ◄ NUEVO: Importamos el nuevo componente con un nombre único y cerramos la comilla correctamente
 import ComponenteInteractivo from '../../components/interactivo.astro'
+import AetherMap from '../../components/AetherMap.astro'
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts')
@@ -18,7 +19,8 @@ const { post } = Astro.props
 const { Content } = await render(post)
 
 // ◄ MODIFICADO: Extraemos AMBAS banderas condicionales desde el frontmatter (post.data)
-const { showArchitectureDiagram, showInteractiveComponent } = post.data
+const { showArchitectureDiagram, showInteractiveComponent, showAetherMap } =
+  post.data
 
 const formattedDate = post.data.date.toLocaleDateString('es-ES', {
   year: 'numeric',
@@ -62,6 +64,8 @@ const formattedDate = post.data.date.toLocaleDateString('es-ES', {
     <div class="post-content">
       <Content />
     </div>
+
+    {showAetherMap && <AetherMap />}
 
     <footer class="post-footer">
       <a href="/" class="back-link">← Volver al inicio</a>

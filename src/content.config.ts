@@ -14,6 +14,7 @@ const posts = defineCollection({
     showArchitectureDiagram: z.boolean().optional(), // ◄ Añadimos esta línea
     // ◄ AÑADE ESTA LÍNEA PARA QUE EL SLUG RECONOZCA LA BANDERA
     showInteractiveComponent: z.boolean().optional(),
+    showAetherMap: z.boolean().optional(),
   }),
 })
 
