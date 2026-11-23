@@ -309,6 +309,12 @@ html.is-loading .stage {
   margin: 0;
   color: #383530;
 }
+.cap-note {
+  margin-top: 11px !important;
+  padding-left: 11px;
+  border-left: 1px solid var(--rose);
+  font-size: 0.9em !important;
+}
 .cap .kicker {
   font:
     400 11px 'CommitMono',
@@ -799,16 +805,20 @@ body.is-night .box-r {
 /* ── Fase 5 · grietas, epílogo y pulido ── */
 .crack-ring {
   fill: none;
-  stroke: var(--rose);
-  stroke-width: 2;
+  stroke: #a51f1b;
+  stroke-width: 2.7;
   stroke-dasharray: 4 3;
 }
 .crack-lbl {
   font:
-    600 8px 'IBM Plex Mono',
+    800 9px 'IBM Plex Mono',
     monospace;
-  fill: var(--rose);
-  letter-spacing: 0.06em;
+  fill: #a51f1b;
+  stroke: var(--paper);
+  stroke-width: 2.6px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  letter-spacing: 0.035em;
 }
 .epilogue-nav {
   display: flex;

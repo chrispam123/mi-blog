@@ -277,20 +277,25 @@
             </p>
           </article>
           <article class="cap">
-            <p class="kicker">
-              Las grietas en <code>main</code> · plano Nocturne
-            </p>
-            <h2>Dos puntos frágiles en la frontera.</h2>
+            <p class="kicker">Las grietas en el plano Nocturne</p>
+            <h2>Tres puntos frágiles en la frontera.</h2>
             <p>
-              <strong>1 · Credencial no garantizada:</strong> si Google omite el
-              refresh token, Auth emite el JWT igualmente y no actualiza el
-              perfil. Si ya había un refresh token en DynamoDB, se conserva; si
-              no lo había —o el anterior dejó de ser válido—, el Worker no podrá
-              autenticarse con Google.<br /><strong
-                >2 · Portal sin guardián:</strong
+              <strong>1 · Refresh token no garantizado:</strong> si Google no lo
+              devuelve, Auth emite el JWT y conserva el perfil anterior; si no
+              había uno —o el anterior ya no sirve—, el Worker no podrá operar.
+              <br /><strong>2 · Sin authorizer en API Gateway:</strong> Upload y
+              Status validan el JWT dentro de cada Lambda. <br /><strong
+                >3 · OAuth sin PKCE ni <code>state</code>:</strong
               >
-              API Gateway no declara JWT authorizer; la validación vive dentro
-              de Upload y Status.
+              una captura del código podría permitir intentar canjearlo. PKCE
+              exige el verificador; <code>state</code> vincula la respuesta al
+              intento de login.
+            </p>
+            <p class="cap-note">
+              PKCE y <code>state</code> protegen el intercambio, no un JWT
+              robado después. Nocturne entrega el JWT a la extensión y lo guarda
+              en <code>chrome.storage.local</code>; no usa un BFF para
+              mantenerlo fuera del cliente.
             </p>
           </article>
           <article class="cap">
