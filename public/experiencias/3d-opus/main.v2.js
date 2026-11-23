@@ -203,8 +203,7 @@ const userFace = face(
     portal(0.82, 0.78, COL.gold) +
     fig(0.55, 0.62) +
     piece(0.82, 0.78, 'jwt', 40, 'm-jwt-u') +
-    piece(0.92, 0.45, 'code', 40, 'm-code-u') +
-    `<g id="crack-session" transform="translate(${iso(0.65, 0.28)[0]},${iso(0.65, 0.28)[1] - 56})"><circle class="crack-ring" r="29"/><text class="crack-lbl" text-anchor="middle" y="-39">JWT en cliente</text></g>`,
+    piece(0.92, 0.45, 'code', 40, 'm-code-u'),
 )
 
 const G_JWT = [0.6, 0.79, 26],
@@ -302,7 +301,8 @@ const nocturneFace = face(
     `<text id="m-userjob" class="tag" text-anchor="middle" x="${ujX}" y="${ujY}">USER#sub<tspan x="${ujX}" dy="10">JOB#id</tspan></text>` +
     `<g id="crack-dynamo" transform="translate(${iso(N.dyn.u, N.dyn.v)[0]},${iso(N.dyn.u, N.dyn.v)[1] - N.dyn.lift})"><circle class="crack-ring" r="25"/><text class="crack-lbl" text-anchor="middle" y="-43">∅ sin refresh</text></g>` +
     `<g id="crack-api" transform="translate(${iso(N.api.u, N.api.v)[0]},${iso(N.api.u, N.api.v)[1] - N.api.lift})"><circle class="crack-ring" r="25"/><text class="crack-lbl" text-anchor="middle" y="-43">sin authorizer</text></g>` +
-    `<g id="crack-oauth" transform="translate(${iso(N.por.u, N.por.v)[0]},${iso(N.por.u, N.por.v)[1]})"><circle class="crack-ring" r="24"/><text class="crack-lbl" text-anchor="middle" y="-37">sin PKCE / state</text></g>` +
+    `<g id="crack-oauth" transform="translate(${iso(N.por.u, N.por.v)[0]},${iso(N.por.u, N.por.v)[1]})"><circle class="crack-ring" r="29"/><text class="crack-lbl crack-lbl-focus" text-anchor="middle" y="-43">sin PKCE / state</text></g>` +
+    `<g id="crack-session" transform="translate(${iso(N.por.u, N.por.v)[0] + 27},${iso(N.por.u, N.por.v)[1] + 43})"><path class="crack-leader" d="M-27,-43 L-5,-17"/><rect class="crack-badge" x="0" y="-19" width="145" height="30" rx="3"/><text class="crack-badge-label" x="7" y="1">JWT → cliente</text></g>` +
     piece(N.por.u, N.por.v, 'code', 40, 'm-code-n') +
     `<text id="m-exch" class="tag" text-anchor="middle" x="${iso(N.por.u, N.por.v)[0] + 6}" y="${iso(N.por.u, N.por.v)[1] + 16}">canje ⇄ Google</text>` +
     `<text id="t-kms-enc" class="tag" x="${iso(N.kms.u, N.kms.v)[0] + 28}" y="${iso(N.kms.u, N.kms.v)[1] - (N.kms.lift - 3)}">← cifra</text>` +

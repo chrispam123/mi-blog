@@ -811,7 +811,7 @@ body.is-night .box-r {
 }
 .crack-lbl {
   font:
-    800 9px 'IBM Plex Mono',
+    900 12px 'IBM Plex Mono',
     monospace;
   fill: #a51f1b;
   stroke: var(--paper);
@@ -819,6 +819,31 @@ body.is-night .box-r {
   stroke-linejoin: round;
   paint-order: stroke;
   letter-spacing: 0.035em;
+}
+.crack-lbl-focus {
+  font-size: 18px !important;
+  stroke-width: 3.5px;
+}
+.crack-leader {
+  fill: none;
+  stroke: #a51f1b;
+  stroke-width: 2.7;
+  stroke-dasharray: 4 3;
+}
+.crack-badge {
+  fill: var(--paper);
+  stroke: #a51f1b;
+  stroke-width: 2;
+}
+.crack-badge-label {
+  font:
+    900 16px 'IBM Plex Mono',
+    monospace;
+  fill: #a51f1b;
+  stroke: var(--paper);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
 }
 .epilogue-nav {
   display: flex;
